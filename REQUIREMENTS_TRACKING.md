@@ -16,7 +16,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | :-- | :-- | :-- |
 | **ComfyUI** | ✅ | Rodando em `C:\ComfyUI-Zluda` :8188 via ZLUDA; gera imagens reais |
 | **Stable Diffusion XL** | ✅ | text2img validado (imagem real gerada na RX 7800 XT) |
-| **Hunyuan3D 2.0** | 🚧 | Repo clonado + pesos baixados (34 GB). NÃO integrado ainda (Fase 3) |
+| **Hunyuan3D 2.0** | 🚧 | **Integrado ao ComfyUI** (ComfyUI-Hunyuan3DWrapper, 36 nodes carregados, modelo dit visível, ComfyUI estável sem regressão do SDXL). **Geração de malha .glb ainda NÃO validada** (próximo passo; risco ZLUDA no DiT/VAE). Textura precisará de plano B (custom_rasterizer é CUDA-only). |
 | **Blender** | 🚧 | 4.2.3 baixado e executa. Automação (retopo/UV/bake) NÃO implementada (Fase 4) |
 
 ## 2. Funcionalidades de geração

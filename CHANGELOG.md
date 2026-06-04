@@ -9,6 +9,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
   `CONFORMANCE_CHECKLIST.md`, `FUTURE_AUTOMATION_ROADMAP.md`.
 - Política "sem placeholders" e checklist de conformidade.
 
+### In progress — Fase 3 (geração 3D)
+- **Hunyuan3D integrado ao ComfyUI-Zluda** (ComfyUI-Hunyuan3DWrapper): 36 nodes
+  carregados, modelo dit (`hunyuan3d-dit-v2-0`) acessível via extra_model_paths,
+  numpy re-fixado em 1.26.4 (wrapper subia p/ 2.x). ComfyUI estável, **SDXL sem
+  regressão** (validado). Geração de `.glb` ainda NÃO validada (próximo passo).
+
 ### Added — Fase 7 UI (Milestone 2)
 - **Imagem → Imagem** na UI: drag & drop de imagem (upload real) + slider denoise.
   **img2img validado E2E** (GPU) — passa de 🧪 para ✅ no tracking.
