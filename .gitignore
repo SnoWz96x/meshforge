@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Auxiliary tools (clonadas/baixadas via tool-manager — NUNCA versionar)
+/auxiliary-tools/comfyui/
+/auxiliary-tools/hunyuan3d/
+/auxiliary-tools/blender/
+/auxiliary-tools/instant-meshes/
+/auxiliary-tools/models/
+/auxiliary-tools/downloads/
+/auxiliary-tools/cache/
+
+# Storage local (assets gerados)
+/storage/
+/data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Harness / ferramentas locais
+.claude/
+
+# OS / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Prisma
+packages/db/prisma/*.db

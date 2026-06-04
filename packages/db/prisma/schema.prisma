@@ -1,0 +1,202 @@
+// MeshForge — schema do banco (Postgres)
+// Núcleo do plano de controle: usuários, projetos, gerações, jobs,
+// assets, runs de pipeline e registro de versões de ferramentas/modelos.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// Usuário (single-user no início, mas modelado p/ multiuser)
+// ------------------------------------------------------------
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String?
+  role         Role      @default(OWNER)
+  projects     Project[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  USER
+}
+
+// ------------------------------------------------------------
+// Projeto: agrupa gerações e assets
+// ------------------------------------------------------------
+model Project {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  thumbnailAssetId String?
+  generations     Generation[]
+  assets          Asset[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([userId])
+}
+
+// ------------------------------------------------------------
+// Geração: uma intenção do usuário (prompt/imagem -> resultado)
+// ------------------------------------------------------------
+model Generation {
+  id             String          @id @default(cuid())
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type           GenerationType
+  prompt         String?
+  negativePrompt String?
+  params         Json            @default("{}")
+  status         JobStatus       @default(QUEUED)
+  jobs           Job[]
+  pipelineRun    PipelineRun?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([projectId])
+}
+
+enum GenerationType {
+  TEXT_TO_IMAGE
+  IMAGE_TO_IMAGE
+  IMAGE_TO_3D
+  TEXT_TO_3D
+  FULL_PIPELINE
+}
+
+// ------------------------------------------------------------
+// Job: uma etapa atômica e retomável do pipeline
+// ------------------------------------------------------------
+model Job {
+  id           String     @id @default(cuid())
+  generationId String
+  generation   Generation @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  stage        JobStage
+  status       JobStatus  @default(QUEUED)
+  gpuBackend   GpuBackend @default(ZLUDA)
+  workerId     String?
+  progress     Int        @default(0)
+  inputAssets  Asset[]    @relation("JobInputs")
+  outputAssets Asset[]    @relation("JobOutputs")
+  error        String?
+  retries      Int        @default(0)
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@index([generationId])
+  @@index([status])
+}
+
+enum JobStage {
+  SDXL_TXT2IMG
+  SDXL_IMG2IMG
+  COMFYUI_WORKFLOW
+  HUNYUAN3D_SHAPE
+  HUNYUAN3D_TEXTURE
+  BLENDER_CLEANUP
+  BLENDER_RETOPO
+  BLENDER_UV
+  BLENDER_BAKE
+  BLENDER_TEXTURE_FIX
+  PREVIEW_RENDER
+  EXPORT
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+enum GpuBackend {
+  ZLUDA
+  ROCM
+  CUDA
+  DIRECTML
+}
+
+// ------------------------------------------------------------
+// Asset: qualquer artefato (imagem, malha, textura, export)
+// ------------------------------------------------------------
+model Asset {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kind        AssetKind
+  format      String
+  storageUri  String
+  sizeBytes   BigInt    @default(0)
+  meta        Json      @default("{}")
+  inputForJobs  Job[]   @relation("JobInputs")
+  outputOfJobs  Job[]   @relation("JobOutputs")
+  createdAt   DateTime  @default(now())
+
+  @@index([projectId])
+}
+
+enum AssetKind {
+  IMAGE
+  MESH_RAW
+  MESH_RETOPO
+  TEXTURE
+  PREVIEW
+  EXPORT
+}
+
+// ------------------------------------------------------------
+// PipelineRun: máquina de estados do pipeline completo
+// ------------------------------------------------------------
+model PipelineRun {
+  id           String     @id @default(cuid())
+  generationId String     @unique
+  generation   Generation @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  currentStage JobStage?
+  stateMachine Json       @default("{}")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+// ------------------------------------------------------------
+// Registro de versões das ferramentas externas (tool-manager)
+// ------------------------------------------------------------
+model ToolVersion {
+  id          String   @id @default(cuid())
+  tool        String
+  version     String
+  commitHash  String?
+  sha256      String?
+  status      String   @default("installed")
+  installedAt DateTime @default(now())
+
+  @@unique([tool, version])
+}
+
+// ------------------------------------------------------------
+// Registro de modelos de IA (model-manager)
+// ------------------------------------------------------------
+model ModelAsset {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  source      String   // hf | civitai | url
+  repoId      String?
+  revision    String?
+  sha256      String?
+  localPath   String?
+  sizeBytes   BigInt   @default(0)
+  installedAt DateTime @default(now())
+}

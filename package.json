@@ -1,0 +1,31 @@
+{
+  "name": "meshforge",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Plataforma self-hosted de geração 3D por IA (ComfyUI + SDXL + Hunyuan3D + Blender)",
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r --parallel dev",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @meshforge/db generate",
+    "db:migrate": "pnpm --filter @meshforge/db migrate",
+    "db:studio": "pnpm --filter @meshforge/db studio",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "infra:logs": "docker compose -f infra/docker-compose.yml logs -f",
+    "tools:install": "pnpm --filter @meshforge/tool-manager start install",
+    "tools:check": "pnpm --filter @meshforge/tool-manager start check",
+    "tools:verify": "pnpm --filter @meshforge/tool-manager start verify"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  }
+}

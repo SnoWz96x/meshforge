@@ -1,0 +1,12 @@
+# Normaliza quebras de linha: LF no repositório.
+* text=auto eol=lf
+
+# Scripts que dependem do SO mantêm seu fim de linha.
+*.ps1 text eol=crlf
+*.sh  text eol=lf
+
+# Binários
+*.png binary
+*.jpg binary
+*.glb binary
+*.fbx binary

@@ -1,0 +1,58 @@
+<svg width="760" height="220" viewBox="0 0 760 220" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MeshForge — open-source AI pipeline for 3D asset generation">
+  <defs>
+    <linearGradient id="heat" x1="0" y1="0" x2="0" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFD37A"/>
+      <stop offset="0.45" stop-color="#FF6B35"/>
+      <stop offset="1" stop-color="#E8336D"/>
+    </linearGradient>
+    <linearGradient id="word" x1="300" y1="80" x2="640" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFB347"/>
+      <stop offset="0.55" stop-color="#FF6B35"/>
+      <stop offset="1" stop-color="#E8336D"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="760" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#10141E"/>
+      <stop offset="1" stop-color="#080A11"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect x="2" y="2" width="756" height="216" rx="26" fill="url(#card)" stroke="#212838" stroke-width="1.5"/>
+
+  <!-- Mark -->
+  <g transform="translate(54,50)" filter="url(#glow)">
+    <polygon points="64,16 26,44 64,50" fill="url(#heat)" opacity="0.92"/>
+    <polygon points="64,16 64,50 102,44" fill="url(#heat)" opacity="0.78"/>
+    <polygon points="26,44 64,50 64,84 38,86" fill="url(#heat)" opacity="0.5"/>
+    <polygon points="64,50 102,44 90,86 64,84" fill="url(#heat)" opacity="0.62"/>
+    <polygon points="38,86 64,84 64,112" fill="url(#heat)" opacity="0.34"/>
+    <polygon points="64,84 90,86 64,112" fill="url(#heat)" opacity="0.44"/>
+    <g stroke="#FFE7C4" stroke-width="1.4" stroke-linejoin="round" opacity="0.85" fill="none">
+      <polygon points="64,16 26,44 38,86 64,112 90,86 102,44"/>
+      <path d="M64,16 L64,50 M26,44 L64,50 L102,44 M64,50 L64,84 M38,86 L64,84 L90,86 M64,84 L64,112"/>
+    </g>
+    <g fill="#FFF3E0">
+      <circle cx="64" cy="16" r="2.6"/><circle cx="26" cy="44" r="2.6"/><circle cx="102" cy="44" r="2.6"/>
+      <circle cx="38" cy="86" r="2.6"/><circle cx="90" cy="86" r="2.6"/><circle cx="64" cy="112" r="2.6"/>
+      <circle cx="64" cy="50" r="2.2" fill="#FFD37A"/><circle cx="64" cy="84" r="2.2" fill="#FF6B35"/>
+    </g>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="218" y="108" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="62" font-weight="800" letter-spacing="-1">
+    <tspan fill="#EEF2F8">Mesh</tspan><tspan fill="url(#word)">Forge</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="220" y="142" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="18.5" font-weight="500" fill="#9AA4B8">
+    Open-source AI pipeline for 3D asset generation
+  </text>
+
+  <!-- Tech chips -->
+  <text x="221" y="176" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" font-weight="600" letter-spacing="1.5" fill="#5D6B86">
+    COMFYUI · STABLE DIFFUSION XL · HUNYUAN3D · BLENDER
+  </text>
+</svg>
