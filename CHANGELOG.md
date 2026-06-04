@@ -9,6 +9,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
   `CONFORMANCE_CHECKLIST.md`, `FUTURE_AUTOMATION_ROADMAP.md`.
 - Política "sem placeholders" e checklist de conformidade.
 
+### Added — Fase 7 UI (Milestone 1)
+- **`apps/web`** (Next.js 14): app shell premium (sidebar + topbar + dark/light
+  via next-themes) com os tokens do `DESIGN_SYSTEM` ("forge heat", dark-first).
+- Tela **Gerar** (2 painéis): prompt + params → cria geração **real** → progresso →
+  imagem + "Baixar PNG". **Validado E2E no navegador** (imagem 1024px gerada na GPU).
+- **Biblioteca** (`/library`) e **Projetos** (`/projects`): dados reais da API.
+- Áreas Workflow/Exportar como estados **honestos** "em desenvolvimento" (sem fakes).
+
 ### Decided
 - **Produto: Híbrido** — UI Next.js web-first, arquitetada para shell Tauri depois.
 - **Design System** (`DESIGN_SYSTEM.md`): identidade "forge heat", dark-first,

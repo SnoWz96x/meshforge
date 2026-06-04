@@ -65,13 +65,14 @@ funcional algo que não esteja realmente implementado e validado.**
 | :-- | :-- | :-- |
 | Definição do produto (Web/Desktop/Híbrido) | ✅ | **Decidido: Híbrido — Next.js web-first + shell Tauri depois** (aprovado 2026-06-04) |
 | Design System (identidade premium) | ✅ | `DESIGN_SYSTEM.md` (pesquisa de mercado + identidade "forge heat") |
-| Front-end premium | ⬜ | Não iniciado (Fase 7; stack e IA definidos no DESIGN_SYSTEM) |
-| Dark mode / Light mode | ⬜ | |
-| Visualização 3D em tempo real | ⬜ | |
-| Drag & drop | ⬜ | |
-| Galeria / histórico visual | ⬜ | |
-| Biblioteca de projetos / assets | ⬜ | |
-| Área de geração / workflow / exportação | ⬜ | |
+| Front-end premium — **Milestone 1** | ✅ | `apps/web` (Next.js): shell premium + tokens "forge heat", validado E2E no navegador (gerou imagem 1024px real) |
+| Dark mode / Light mode | ✅ | next-themes, tokens dark-first + light; toggle funcional |
+| Área de geração (text2img) | ✅ | Tela "Gerar" 2 painéis → cria geração real → progresso → imagem + download |
+| Galeria / biblioteca (imagens) | ✅ | `/library` lista assets reais do banco; `/projects` lista projetos reais |
+| Áreas Workflow / Exportar (na UI) | 🚧 | Telas presentes mas **honestamente marcadas "em desenvolvimento"** (Fase 5/6) — NÃO fingem funcionar |
+| Visualização 3D em tempo real | ⬜ | Depende da Fase 3 (gerar 3D) |
+| Drag & drop (upload img2img) | ⬜ | Próximo milestone da UI |
+| Command palette (⌘K) | ⬜ | Botão presente, ação ainda não ligada (marcado) — próximo milestone |
 
 ## 6. Governança (novas diretrizes)
 

@@ -184,14 +184,16 @@ meshforge/
 | Phase | Milestone | Status |
 | :-- | :-- | :-- |
 | **0** | Foundation — monorepo, Docker infra, DB schema, tool-manager | ✅ Done |
-| **1** | Tool & Model Manager — full bootstrap, model downloads | 🚧 Next |
-| **2** | 2D generation — SDXL via ComfyUI, jobs, queue, storage | ⬜ |
+| **1** | Tool & Model Manager — model downloads | ✅ Done |
+| **2** | 2D generation — SDXL via ComfyUI on AMD/ZLUDA, jobs, queue, storage | ✅ Done |
 | **3** | 3D generation — Hunyuan3D worker, live 3D viewer | ⬜ |
 | **4** | Blender pipeline — retopo, UV, bake, texturing | ⬜ |
 | **5** | Orchestration — full pipeline, retries, GPU lock | ⬜ |
 | **6** | Export — GLB/GLTF/OBJ/FBX/STL/USDZ + previews | ⬜ |
-| **7** | Premium UI — gallery, projects, history, realtime | ⬜ |
+| **7** | Premium UI — gallery, projects, generation | 🚧 Milestone 1 done (web shell + generate + library) |
 | **8** | Hardening & docs | ⬜ |
+
+> Estado detalhado e honesto: [REQUIREMENTS_TRACKING.md](REQUIREMENTS_TRACKING.md) · [ROADMAP.md](ROADMAP.md)
 
 ## Acknowledgements
 
