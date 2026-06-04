@@ -29,10 +29,6 @@ export const DEFAULT_MANIFEST: ToolManifest = {
     url: "https://download.blender.org/release/Blender4.2/blender-4.2.3-windows-x64.zip",
     githubRepo: "blender/blender",
   },
-  "instant-meshes": {
-    type: "release",
-    version: "latest",
-    url: "https://github.com/wjakob/instant-meshes/releases/download/v0.0/instant-meshes-windows.zip",
-    githubRepo: "wjakob/instant-meshes",
-  },
+  // instant-meshes: adicionado na Fase 4 (retopologia). Os binários não são
+  // release assets do GitHub; URL será resolvida/verificada quando integrarmos.
 };
