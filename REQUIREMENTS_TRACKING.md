@@ -24,7 +24,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | Funcionalidade | Status | Observação |
 | :-- | :-- | :-- |
 | Text-to-Image | ✅ | E2E validado (API→fila→worker→ComfyUI→storage→DB) |
-| Image-to-Image | 🧪 | Workflow + worker implementados; **não validado E2E** (precisa upload + teste) |
+| Image-to-Image | ✅ | Validado E2E (upload → SDXL_IMG2IMG na GPU → variação gerada, via UI e API) |
 | Image-to-3D | ⬜ | Fase 3 |
 | Text-to-3D | ⬜ | Fase 3 |
 | Retopologia automática | ⬜ | Fase 4 (Blender + Instant Meshes) |
@@ -71,8 +71,8 @@ funcional algo que não esteja realmente implementado e validado.**
 | Galeria / biblioteca (imagens) | ✅ | `/library` lista assets reais do banco; `/projects` lista projetos reais |
 | Áreas Workflow / Exportar (na UI) | 🚧 | Telas presentes mas **honestamente marcadas "em desenvolvimento"** (Fase 5/6) — NÃO fingem funcionar |
 | Visualização 3D em tempo real | ⬜ | Depende da Fase 3 (gerar 3D) |
-| Drag & drop (upload img2img) | ⬜ | Próximo milestone da UI |
-| Command palette (⌘K) | ⬜ | Botão presente, ação ainda não ligada (marcado) — próximo milestone |
+| Drag & drop (upload img2img) | ✅ | Dropzone na tela Gerar; upload real → modo Imagem→Imagem |
+| Command palette (⌘K) | ✅ | cmdk: navegação + alternar tema (validado no navegador) |
 
 ## 6. Governança (novas diretrizes)
 

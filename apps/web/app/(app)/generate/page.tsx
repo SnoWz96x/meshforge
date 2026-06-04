@@ -1,10 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Loader2, ImageOff, Wand2, Box, Type } from "lucide-react";
+import {
+  Sparkles,
+  Loader2,
+  ImageOff,
+  Wand2,
+  Box,
+  Type,
+  UploadCloud,
+  X,
+} from "lucide-react";
 import { Topbar } from "@/components/shell/topbar";
-import { api, assetUrl, type Generation } from "@/lib/api";
+import { api, assetUrl, uploadImage, type Asset, type Generation } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 const SIZES = [
@@ -13,35 +22,52 @@ const SIZES = [
   { label: "768 × 1024", w: 768, h: 1024 },
 ];
 
-const MODES = [
+type Mode = "TEXT_TO_IMAGE" | "IMAGE_TO_IMAGE" | "IMAGE_TO_3D" | "TEXT_TO_3D";
+const MODES: { id: Mode; label: string; icon: typeof Type; ready: boolean }[] = [
   { id: "TEXT_TO_IMAGE", label: "Texto → Imagem", icon: Type, ready: true },
-  { id: "IMAGE_TO_IMAGE", label: "Imagem → Imagem", icon: Wand2, ready: false },
+  { id: "IMAGE_TO_IMAGE", label: "Imagem → Imagem", icon: Wand2, ready: true },
   { id: "IMAGE_TO_3D", label: "Imagem → 3D", icon: Box, ready: false },
   { id: "TEXT_TO_3D", label: "Texto → 3D", icon: Box, ready: false },
 ];
 
 const isTerminal = (s?: string) => s === "SUCCEEDED" || s === "FAILED" || s === "CANCELED";
 
+async function ensureProject(): Promise<string> {
+  const projects = await api.listProjects();
+  if (projects.length) return projects[0].id;
+  return (await api.createProject("Meu primeiro projeto")).id;
+}
+
 export default function GeneratePage() {
   const qc = useQueryClient();
+  const [mode, setMode] = useState<Mode>("TEXT_TO_IMAGE");
   const [prompt, setPrompt] = useState("a red sports car on a mountain road at sunset, cinematic");
   const [negative, setNegative] = useState("blurry, low quality");
   const [size, setSize] = useState(SIZES[0]);
   const [steps, setSteps] = useState(20);
   const [cfg, setCfg] = useState(7);
+  const [denoise, setDenoise] = useState(0.6);
+  const [input, setInput] = useState<Asset | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Garante um projeto (single-user) sem dados falsos: usa o 1º real ou cria um.
-  async function ensureProject(): Promise<string> {
-    const projects = await api.listProjects();
-    if (projects.length) return projects[0].id;
-    const p = await api.createProject("Meu primeiro projeto");
-    return p.id;
-  }
+  const upload = useMutation({
+    mutationFn: async (file: File) => uploadImage(await ensureProject(), file),
+    onSuccess: (a) => setInput(a),
+  });
 
   const gen = useMutation({
     mutationFn: async () => {
       const projectId = await ensureProject();
+      if (mode === "IMAGE_TO_IMAGE") {
+        return api.createGeneration({
+          projectId,
+          type: "IMAGE_TO_IMAGE",
+          prompt,
+          negativePrompt: negative,
+          inputAssetId: input!.id,
+          params: { steps, cfg, denoise },
+        });
+      }
       return api.createGeneration({
         projectId,
         type: "TEXT_TO_IMAGE",
@@ -65,14 +91,25 @@ export default function GeneratePage() {
   }, [active, qc]);
 
   const busy = gen.isPending || (!!active && !isTerminal(active.status));
+  const needsImage = mode === "IMAGE_TO_IMAGE" && !input;
+  const canGenerate = !busy && prompt.trim() && !needsImage;
 
   return (
     <>
       <Topbar title="Gerar" />
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[380px_1fr]">
-        {/* Painel de controles */}
         <div className="flex flex-col gap-5 overflow-y-auto border-r border-border p-5">
-          <ModeTabs />
+          <ModeTabs mode={mode} onMode={setMode} />
+
+          {mode === "IMAGE_TO_IMAGE" && (
+            <Dropzone
+              input={input}
+              uploading={upload.isPending}
+              onFile={(f) => upload.mutate(f)}
+              onClear={() => setInput(null)}
+            />
+          )}
+
           <Field label="Prompt">
             <textarea
               value={prompt}
@@ -89,64 +126,67 @@ export default function GeneratePage() {
               className="w-full rounded-sm border border-border bg-surface-2 px-3 py-2 text-[13px] text-content outline-none transition-colors focus:border-accent"
             />
           </Field>
-          <Field label="Resolução">
-            <div className="grid grid-cols-3 gap-1.5">
-              {SIZES.map((s) => (
-                <button
-                  key={s.label}
-                  onClick={() => setSize(s)}
-                  className={cn(
-                    "rounded-sm border px-2 py-2 text-[11px] font-medium transition-colors",
-                    size.label === s.label
-                      ? "border-accent bg-accent-soft text-content"
-                      : "border-border bg-surface-2 text-content-secondary hover:text-content",
-                  )}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </Field>
+
+          {mode === "TEXT_TO_IMAGE" && (
+            <Field label="Resolução">
+              <div className="grid grid-cols-3 gap-1.5">
+                {SIZES.map((s) => (
+                  <button
+                    key={s.label}
+                    onClick={() => setSize(s)}
+                    className={cn(
+                      "rounded-sm border px-2 py-2 text-[11px] font-medium transition-colors",
+                      size.label === s.label
+                        ? "border-accent bg-accent-soft text-content"
+                        : "border-border bg-surface-2 text-content-secondary hover:text-content",
+                    )}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <Slider label="Steps" value={steps} min={10} max={40} onChange={setSteps} />
             <Slider label="CFG" value={cfg} min={1} max={12} onChange={setCfg} />
           </div>
+          {mode === "IMAGE_TO_IMAGE" && (
+            <Slider label="Denoise" value={denoise} min={0.2} max={0.9} step={0.05} onChange={setDenoise} />
+          )}
 
           <button
-            disabled={busy || !prompt.trim()}
+            disabled={!canGenerate}
             onClick={() => gen.mutate()}
             className={cn(
               "mt-1 flex items-center justify-center gap-2 rounded-sm bg-accent px-4 py-2.5 text-[13px] font-semibold text-white transition-all duration-150 ease-out",
-              busy || !prompt.trim()
-                ? "cursor-not-allowed opacity-50"
-                : "hover:bg-accent-hover hover:shadow-glow",
+              !canGenerate ? "cursor-not-allowed opacity-50" : "hover:bg-accent-hover hover:shadow-glow",
             )}
           >
             {busy ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
-            {busy ? "Gerando…" : "Gerar imagem"}
+            {busy ? "Gerando…" : needsImage ? "Envie uma imagem" : "Gerar imagem"}
           </button>
           <p className="text-[11px] leading-relaxed text-content-muted">
             Geração real via ComfyUI + SDXL na sua GPU (ZLUDA). A primeira pode levar mais tempo.
           </p>
         </div>
 
-        {/* Resultado */}
-        <ResultPane active={active} pending={gen.isPending} error={gen.error?.message} />
+        <ResultPane active={active} pending={gen.isPending} error={gen.error?.message || upload.error?.message} />
       </div>
     </>
   );
 }
 
-function ModeTabs() {
-  const [mode, setMode] = useState("TEXT_TO_IMAGE");
+function ModeTabs({ mode, onMode }: { mode: Mode; onMode: (m: Mode) => void }) {
   return (
     <div className="grid grid-cols-2 gap-1.5">
       {MODES.map(({ id, label, icon: Icon, ready }) => (
         <button
           key={id}
           disabled={!ready}
-          onClick={() => ready && setMode(id)}
-          title={ready ? undefined : "Disponível na Fase 3 (3D) / próxima iteração"}
+          onClick={() => ready && onMode(id)}
+          title={ready ? undefined : "Disponível na Fase 3 (geração 3D)"}
           className={cn(
             "flex items-center gap-2 rounded-sm border px-2.5 py-2 text-[12px] font-medium transition-colors",
             !ready && "cursor-not-allowed opacity-40",
@@ -160,6 +200,77 @@ function ModeTabs() {
           {!ready && <span className="ml-auto text-[9px] uppercase text-content-muted">em breve</span>}
         </button>
       ))}
+    </div>
+  );
+}
+
+function Dropzone({
+  input,
+  uploading,
+  onFile,
+  onClear,
+}: {
+  input: Asset | null;
+  uploading: boolean;
+  onFile: (f: File) => void;
+  onClear: () => void;
+}) {
+  const [drag, setDrag] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+
+  if (input) {
+    return (
+      <div className="relative overflow-hidden rounded-sm border border-border">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={assetUrl(input.id)} alt="entrada" className="h-32 w-full object-cover" />
+        <button
+          onClick={onClear}
+          className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-black/60 text-white/90 backdrop-blur transition-colors hover:bg-black/80"
+          aria-label="Remover imagem"
+        >
+          <X size={13} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={() => ref.current?.click()}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDrag(true);
+      }}
+      onDragLeave={() => setDrag(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDrag(false);
+        const f = e.dataTransfer.files?.[0];
+        if (f) onFile(f);
+      }}
+      className={cn(
+        "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-sm border border-dashed px-4 py-7 text-center transition-colors",
+        drag ? "border-accent bg-accent-soft" : "border-border-strong bg-surface-2 hover:border-accent",
+      )}
+    >
+      {uploading ? (
+        <Loader2 size={20} className="animate-spin text-accent" />
+      ) : (
+        <UploadCloud size={20} className="text-content-muted" />
+      )}
+      <span className="text-[12px] text-content-secondary">
+        {uploading ? "Enviando…" : "Arraste uma imagem ou clique"}
+      </span>
+      <input
+        ref={ref}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFile(f);
+        }}
+      />
     </div>
   );
 }
@@ -213,12 +324,8 @@ function ResultPane({
           ) : (
             <Centered>
               <Sparkles size={26} className="text-content-muted" />
-              <p className="mt-3 text-[13px] text-content-secondary">
-                Seu resultado aparece aqui
-              </p>
-              <p className="mt-1 text-[11px] text-content-muted">
-                Escreva um prompt e clique em Gerar
-              </p>
+              <p className="mt-3 text-[13px] text-content-secondary">Seu resultado aparece aqui</p>
+              <p className="mt-1 text-[11px] text-content-muted">Escreva um prompt e clique em Gerar</p>
             </Centered>
           )}
         </div>
@@ -255,12 +362,14 @@ function Slider({
   value,
   min,
   max,
+  step = 1,
   onChange,
 }: {
   label: string;
   value: number;
   min: number;
   max: number;
+  step?: number;
   onChange: (v: number) => void;
 }) {
   return (
@@ -272,6 +381,7 @@ function Slider({
         type="range"
         min={min}
         max={max}
+        step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         className="accent-accent"

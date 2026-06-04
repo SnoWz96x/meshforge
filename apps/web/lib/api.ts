@@ -64,10 +64,23 @@ export const api = {
     type: string;
     prompt?: string;
     negativePrompt?: string;
+    inputAssetId?: string;
     params?: Record<string, unknown>;
   }) => req<Generation>("/generations", { method: "POST", body: JSON.stringify(input) }),
   getGeneration: (id: string) => req<Generation>(`/generations/${id}`),
 };
+
+// Upload multipart (não usa o helper req(): o browser define o boundary).
+export async function uploadImage(projectId: string, file: File): Promise<Asset> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(`${API_URL}/projects/${projectId}/assets`, {
+    method: "POST",
+    body: fd,
+  });
+  if (!res.ok) throw new Error(`Upload falhou (${res.status})`);
+  return res.json() as Promise<Asset>;
+}
 
 export function assetUrl(id: string): string {
   return `${API_URL}/assets/${id}`;

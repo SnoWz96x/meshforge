@@ -9,6 +9,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
   `CONFORMANCE_CHECKLIST.md`, `FUTURE_AUTOMATION_ROADMAP.md`.
 - Política "sem placeholders" e checklist de conformidade.
 
+### Added — Fase 7 UI (Milestone 2)
+- **Imagem → Imagem** na UI: drag & drop de imagem (upload real) + slider denoise.
+  **img2img validado E2E** (GPU) — passa de 🧪 para ✅ no tracking.
+- **⌘K command palette** (cmdk): navegação entre áreas + alternar tema.
+
 ### Added — Fase 7 UI (Milestone 1)
 - **`apps/web`** (Next.js 14): app shell premium (sidebar + topbar + dark/light
   via next-themes) com os tokens do `DESIGN_SYSTEM` ("forge heat", dark-first).
