@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-06-04T03:50:46.081Z",
+  "tools": {
+    "comfyui": {
+      "tool": "comfyui",
+      "type": "git",
+      "version": "4f99ce0f8c77e8de7318da1b70d745e55ece6022",
+      "commitHash": "4f99ce0f8c77e8de7318da1b70d745e55ece6022",
+      "installedAt": "2026-06-04T03:50:01.478Z",
+      "path": "C:\\Users\\allan\\OneDrive\\Área de Trabalho\\Nova pasta (5)\\auxiliary-tools\\comfyui"
+    },
+    "hunyuan3d": {
+      "tool": "hunyuan3d",
+      "type": "git",
+      "version": "f8db63096c8282cb27354314d896feba5ba6ff8a",
+      "commitHash": "f8db63096c8282cb27354314d896feba5ba6ff8a",
+      "installedAt": "2026-06-04T03:50:06.464Z",
+      "path": "C:\\Users\\allan\\OneDrive\\Área de Trabalho\\Nova pasta (5)\\auxiliary-tools\\hunyuan3d"
+    },
+    "blender": {
+      "tool": "blender",
+      "type": "release",
+      "version": "4.2.3",
+      "sha256": "7f8be9b1dc904e7689b3112659791c29cc9ed9d46ce57c4ea5b31a0621489b3a",
+      "installedAt": "2026-06-04T03:50:46.081Z",
+      "path": "C:\\Users\\allan\\OneDrive\\Área de Trabalho\\Nova pasta (5)\\auxiliary-tools\\blender"
+    }
+  }
+}
