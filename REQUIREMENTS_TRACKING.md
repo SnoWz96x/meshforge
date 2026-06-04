@@ -63,8 +63,9 @@ funcional algo que não esteja realmente implementado e validado.**
 
 | Item | Status | Observação |
 | :-- | :-- | :-- |
-| Definição do produto (Web/Desktop/Híbrido) | ⬜ | **Aguardando aprovação** (ver análise) |
-| Front-end premium | ⬜ | Não iniciado |
+| Definição do produto (Web/Desktop/Híbrido) | ✅ | **Decidido: Híbrido — Next.js web-first + shell Tauri depois** (aprovado 2026-06-04) |
+| Design System (identidade premium) | ✅ | `DESIGN_SYSTEM.md` (pesquisa de mercado + identidade "forge heat") |
+| Front-end premium | ⬜ | Não iniciado (Fase 7; stack e IA definidos no DESIGN_SYSTEM) |
 | Dark mode / Light mode | ⬜ | |
 | Visualização 3D em tempo real | ⬜ | |
 | Drag & drop | ⬜ | |

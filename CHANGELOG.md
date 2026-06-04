@@ -9,8 +9,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
   `CONFORMANCE_CHECKLIST.md`, `FUTURE_AUTOMATION_ROADMAP.md`.
 - Política "sem placeholders" e checklist de conformidade.
 
-### Pending decision
-- Definição do produto: Web / Desktop (Tauri/Electron) / Híbrido — aguardando aprovação.
+### Decided
+- **Produto: Híbrido** — UI Next.js web-first, arquitetada para shell Tauri depois.
+- **Design System** (`DESIGN_SYSTEM.md`): identidade "forge heat", dark-first,
+  tokens (cor/tipo/espaço/motion), IA/layout e stack, a partir de pesquisa de
+  referências (Meshy, Krea, Linear, Raycast, Spline/Sketchfab, etc.).
 
 ---
 

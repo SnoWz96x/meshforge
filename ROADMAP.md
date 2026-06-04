@@ -15,7 +15,8 @@ Estado real por fase. Datas relativas; foco em "pronto quando validado", sem pla
 | **7 — UI Premium** | Front-end SaaS premium (galeria, projetos, viewer 3D, dark/light, drag&drop) | ⬜ |
 | **8 — Hardening & Docs** | Auth, observabilidade, docs, k8s inicial | ⬜ |
 
-> **Decisão pendente (gate):** definição do produto — Web / Desktop / Híbrido — antes da Fase 7.
+> **Decisão tomada (2026-06-04):** produto **Híbrido** — Next.js web-first +
+> shell Tauri depois. Identidade/UX em [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
 
 ## Próximos candidatos imediatos
 1. **Fase 7 (UI)** — front-end premium (depende da decisão Web/Desktop/Híbrido).

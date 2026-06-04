@@ -98,6 +98,15 @@ hash/revision, registro em `ModelAsset`, cache compartilhado em
 | 7 — UI Premium | galeria, projetos, histórico, drag&drop, dark/light, realtime | UX nível comercial |
 | 8 — Hardening & Docs | observabilidade, docs, k8s (futuro) | release-ready |
 
+## 9.1. Entrega da interface (decidido 2026-06-04)
+
+**Modelo híbrido:** a UI é um app **Next.js web-first** (cliente da API), arquitetado
+para ser embrulhado por um **shell Tauri** depois (diálogos nativos, orquestração dos
+serviços, tray, auto-update) — sem perder o modo web/self-hosted/remoto. A UI nunca
+toca a GPU diretamente; tudo via API. Identidade e UX em
+[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md). Stack: Next.js · Tailwind · shadcn/ui ·
+react-three-fiber · cmdk · framer-motion · TanStack Query · socket.io-client.
+
 ## 10. Decisões registradas
 
 - Backend **NestJS + BullMQ**; workers **Python**.
