@@ -46,6 +46,16 @@ pnpm --filter "@meshforge/db" exec prisma migrate deploy || echo "  ⚠ rode 'pn
 
 step "6/6 Ferramentas externas e modelos"
 if [ "$SKIP_TOOLS" -eq 1 ]; then echo "  ↪ pulando auxiliary-tools"; else pnpm tools:install; fi
-if [ "$SKIP_MODELS" -eq 1 ]; then echo "  ↪ pulando modelos"; else echo "  ↪ model-manager (Fase 1)"; fi
+if [ "$SKIP_MODELS" -eq 1 ]; then
+  echo "  ↪ pulando modelos"
+else
+  echo "  ↪ preparando venv do model-manager..."
+  MM="tools/model-manager"
+  [ -x "$MM/.venv/bin/python" ] || python3 -m venv "$MM/.venv"
+  # pip-system-certs só é necessário no Windows (inspeção TLS); inofensivo no Linux.
+  "$MM/.venv/bin/python" -m pip install --quiet -r "$MM/requirements.txt"
+  echo "  ↪ baixando modelos obrigatórios (~19 GB)..."
+  PYTHONUTF8=1 "$MM/.venv/bin/python" "$MM/model_manager.py" download --required-only
+fi
 
 echo -e "\n✅ Bootstrap concluído. Próximo: 'pnpm db:migrate' e 'pnpm dev'"

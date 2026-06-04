@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "comment": "Catálogo declarativo de modelos de IA do MeshForge. Baixados via HuggingFace pelo model-manager. Caminhos são relativos a auxiliary-tools/.",
+  "models": [
+    {
+      "name": "sdxl-base-1.0",
+      "group": "sdxl",
+      "required": true,
+      "source": "hf",
+      "repoId": "stabilityai/stable-diffusion-xl-base-1.0",
+      "revision": "main",
+      "files": ["sd_xl_base_1.0.safetensors"],
+      "target": "models/sdxl/checkpoints",
+      "approxSizeGB": 6.9,
+      "description": "Stable Diffusion XL base — text-to-image / image-to-image."
+    },
+    {
+      "name": "sdxl-vae-fp16-fix",
+      "group": "sdxl",
+      "required": true,
+      "source": "hf",
+      "repoId": "madebyollin/sdxl-vae-fp16-fix",
+      "revision": "main",
+      "files": ["sdxl_vae.safetensors"],
+      "target": "models/sdxl/vae",
+      "approxSizeGB": 0.32,
+      "description": "VAE fp16-fix — evita artefatos/NaN do VAE original do SDXL."
+    },
+    {
+      "name": "sdxl-refiner-1.0",
+      "group": "sdxl",
+      "required": false,
+      "source": "hf",
+      "repoId": "stabilityai/stable-diffusion-xl-refiner-1.0",
+      "revision": "main",
+      "files": ["sd_xl_refiner_1.0.safetensors"],
+      "target": "models/sdxl/checkpoints",
+      "approxSizeGB": 6.1,
+      "description": "Refiner opcional do SDXL (melhora detalhes finais)."
+    },
+    {
+      "name": "hunyuan3d-2",
+      "group": "hunyuan3d",
+      "required": true,
+      "source": "hf",
+      "repoId": "tencent/Hunyuan3D-2",
+      "revision": "main",
+      "allowPatterns": [
+        "hunyuan3d-dit-v2-0/*",
+        "hunyuan3d-vae-v2-0/*",
+        "hunyuan3d-paint-v2-0/*"
+      ],
+      "target": "models/hunyuan3d",
+      "approxSizeGB": 12.0,
+      "description": "Hunyuan3D 2.0 — shape (DiT+VAE) e paint (textura)."
+    }
+  ]
+}

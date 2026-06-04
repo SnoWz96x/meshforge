@@ -78,7 +78,17 @@ if ($SkipTools) {
 if ($SkipModels) {
   Write-Host "  ↪ --SkipModels: pulando download de checkpoints"
 } else {
-  Write-Host "  ↪ download de modelos será implementado pelo model-manager (Fase 1)" -ForegroundColor Yellow
+  Write-Host "  ↪ preparando venv do model-manager..."
+  $mmDir = Join-Path $root "tools\model-manager"
+  $py = Join-Path $mmDir ".venv\Scripts\python.exe"
+  if (-not (Test-Path $py)) { python -m venv (Join-Path $mmDir ".venv") }
+  # pip-system-certs: faz o Python usar a loja de certificados do Windows
+  # (necessário quando há antivírus/proxy com inspeção TLS).
+  & $py -m pip install --quiet --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host pypi.python.org pip-system-certs
+  & $py -m pip install --quiet -r (Join-Path $mmDir "requirements.txt")
+  Write-Host "  ↪ baixando modelos obrigatórios (~19 GB, pode demorar)..."
+  $env:PYTHONUTF8 = "1"
+  & $py (Join-Path $mmDir "model_manager.py") download --required-only
 }
 
 Write-Host "`n✅ Bootstrap concluído." -ForegroundColor Green
