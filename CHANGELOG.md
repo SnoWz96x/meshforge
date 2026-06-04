@@ -10,10 +10,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 - Política "sem placeholders" e checklist de conformidade.
 
 ### In progress — Fase 3 (geração 3D)
-- **Hunyuan3D integrado ao ComfyUI-Zluda** (ComfyUI-Hunyuan3DWrapper): 36 nodes
-  carregados, modelo dit (`hunyuan3d-dit-v2-0`) acessível via extra_model_paths,
-  numpy re-fixado em 1.26.4 (wrapper subia p/ 2.x). ComfyUI estável, **SDXL sem
-  regressão** (validado). Geração de `.glb` ainda NÃO validada (próximo passo).
+- 🏆 **Image→3D (shape) VALIDADO na AMD RX 7800 XT / ZLUDA** — imagem (caneca) →
+  malha `.glb` watertight (20k verts / 40k faces) via Hunyuan3D no ComfyUI.
+  Pipeline: Hy3DModelLoader → GenerateMesh → VAEDecode → Postprocess → ExportMesh.
+  Workflow validado versionado em `services/comfyui-service/hunyuan3d_workflows.py`.
+- **Hunyuan3D integrado ao ComfyUI-Zluda** (36 nodes; numpy re-fixado 1.26.4;
+  SDXL sem regressão).
+- Pendente: integrar no worker (stage HUNYUAN3D_SHAPE), UI Image→3D, viewer 3D,
+  textura (plano B — custom_rasterizer é CUDA-only).
 
 ### Added — Fase 7 UI (Milestone 2)
 - **Imagem → Imagem** na UI: drag & drop de imagem (upload real) + slider denoise.

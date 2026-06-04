@@ -16,7 +16,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | :-- | :-- | :-- |
 | **ComfyUI** | ✅ | Rodando em `C:\ComfyUI-Zluda` :8188 via ZLUDA; gera imagens reais |
 | **Stable Diffusion XL** | ✅ | text2img validado (imagem real gerada na RX 7800 XT) |
-| **Hunyuan3D 2.0** | 🚧 | **Integrado ao ComfyUI** (ComfyUI-Hunyuan3DWrapper, 36 nodes carregados, modelo dit visível, ComfyUI estável sem regressão do SDXL). **Geração de malha .glb ainda NÃO validada** (próximo passo; risco ZLUDA no DiT/VAE). Textura precisará de plano B (custom_rasterizer é CUDA-only). |
+| **Hunyuan3D 2.0** | 🚧 | **Shape (malha) VALIDADO na AMD/ZLUDA** — imagem→.glb watertight (20k verts, ~8min 1ª vez por compilação MIOpen). Falta: integrar no worker (stage HUNYUAN3D_SHAPE) + UI Image→3D + viewer 3D + **textura** (plano B, custom_rasterizer é CUDA-only). |
 | **Blender** | 🚧 | 4.2.3 baixado e executa. Automação (retopo/UV/bake) NÃO implementada (Fase 4) |
 
 ## 2. Funcionalidades de geração
@@ -25,8 +25,8 @@ funcional algo que não esteja realmente implementado e validado.**
 | :-- | :-- | :-- |
 | Text-to-Image | ✅ | E2E validado (API→fila→worker→ComfyUI→storage→DB) |
 | Image-to-Image | ✅ | Validado E2E (upload → SDXL_IMG2IMG na GPU → variação gerada, via UI e API) |
-| Image-to-3D | ⬜ | Fase 3 |
-| Text-to-3D | ⬜ | Fase 3 |
+| Image-to-3D (shape) | 🧪 | **Malha .glb validada via ComfyUI direto** (caneca → mesh watertight na RX 7800 XT). Falta plugar no worker/UI |
+| Text-to-3D | ⬜ | Fase 3 (text→image→3D) |
 | Retopologia automática | ⬜ | Fase 4 (Blender + Instant Meshes) |
 | Correção automática de malha | ⬜ | Fase 4 |
 | Ajuste automático de texturas | ⬜ | Fase 4 |
