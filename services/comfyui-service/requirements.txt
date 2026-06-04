@@ -1,0 +1,5 @@
+bullmq>=2.9.0
+redis>=5.0.0
+requests>=2.31.0
+websocket-client>=1.7.0
+pip-system-certs>=4.0; platform_system == "Windows"

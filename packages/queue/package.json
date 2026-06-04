@@ -1,0 +1,16 @@
+{
+  "name": "@meshforge/queue",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@meshforge/shared-types": "workspace:*",
+    "bullmq": "^5.21.0",
+    "ioredis": "^5.4.1"
+  }
+}
