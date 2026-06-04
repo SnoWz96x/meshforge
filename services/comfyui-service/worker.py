@@ -107,6 +107,9 @@ async def process(job, _token):  # noqa: ANN001
     try:
         return await asyncio.to_thread(run_job, job.data)
     except Exception as err:  # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        print(f"✗ job {job.id} FAILED: {err!r}", flush=True)
         _publish_progress(job.data, 0, status="FAILED", message=str(err))
         raise
 

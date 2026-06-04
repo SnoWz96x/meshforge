@@ -43,6 +43,13 @@ class ComfyUIClient:
                 if mtype == "progress" and on_progress:
                     value, maximum = data.get("value", 0), data.get("max", 1) or 1
                     on_progress(int(value / maximum * 100))
+                elif mtype == "execution_error" and data.get("prompt_id") == prompt_id:
+                    raise RuntimeError(
+                        f"ComfyUI execution_error: {data.get('exception_type')}: "
+                        f"{data.get('exception_message')}"
+                    )
+                elif mtype == "execution_interrupted" and data.get("prompt_id") == prompt_id:
+                    raise RuntimeError("ComfyUI execution_interrupted")
                 elif mtype == "executing" and data.get("node") is None and data.get("prompt_id") == prompt_id:
                     return  # execução concluída
         finally:

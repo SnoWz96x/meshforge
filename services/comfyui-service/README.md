@@ -52,5 +52,16 @@ preciso o ComfyUI rodando na GPU — ver abaixo.
 4. **Subir** o ComfyUI (`comfyui.bat` do fork) em `http://localhost:8188`.
 5. Rodar este worker — agora `POST /generations` (text2img) produz um PNG real.
 
-A integração do runtime ZLUDA é o próximo passo da Fase 2 (requer a instalação
-do HIP SDK pelo usuário).
+### ✅ Config ZLUDA validada (gera imagens na RX 7800 XT, ~1.8 it/s SDXL 1024)
+
+Lições duramente aprendidas (ver `tools/bootstrap/comfyui-zluda-launch.bat`):
+
+| Sintoma | Causa | Fix |
+| :-- | :-- | :-- |
+| `WinError 126` em `cublas64_11.dll` | ROCm não está no PATH | `set PATH=C:\Program Files\AMD\ROCm\6.4\bin;%PATH%` |
+| `rocBLAS error ... TensileLibrary.dat for gfx1036` + abort | rocBLAS tenta inicializar a **iGPU** (gfx1036 do 7900X3D) | `set "HIP_VISIBLE_DEVICES=1"` (índice 1 = dGPU; **valor sem espaço**) |
+| `cuDNN error: CUDNN_STATUS_EXECUTION_FAILED` no conv2d | cudnn não-funcional no ZLUDA | `set "TORCH_BACKENDS_CUDNN_ENABLED=0"` (usa MIOpen); manter `cudnn64_9.dll` NVIDIA original |
+| Worker trava quando ComfyUI dá erro | `wait()` não tratava erro | trata `execution_error`/`execution_interrupted` no `comfyui_client.py` |
+
+> Não patchear `cudnn64_9.dll` com o do ZLUDA (não carrega, dependências faltando).
+> Se reinstalar o torch, reaplicar os patches ZLUDA (cublas/cusparse/nvrtc/cufft) — ver `mf-repatch` no ComfyUI-Zluda.
