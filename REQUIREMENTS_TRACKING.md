@@ -47,7 +47,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | Sistema de projetos | ✅ | API (sem UI ainda) |
 | Histórico de gerações | ✅ | DB/API (sem UI ainda) |
 | Processamento local | ✅ | GPU local via ZLUDA |
-| WebSocket de progresso | 🧪 | Gateway implementado; não exercitado por um cliente real ainda (R2) |
+| WebSocket de progresso | ✅ | R2 — `socket.io-client` ligado ao `ProgressGateway`; progresso em tempo real (validado: cliente recebeu eventos ao vivo). Polling mantido como fallback (4s) |
 | Cancelamento de geração | ✅ | `POST /generations/:id/cancel` + botão UI (validado E2E) |
 | Health check profundo | ✅ | `/health` checa DB/Redis/ComfyUI (R1) |
 | Tratamento de erros (error boundary, geração atômica, validação env) | ✅ | R1 |

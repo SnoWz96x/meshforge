@@ -5,6 +5,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 ## [Unreleased]
 
 ### Polish (R2)
+- **WebSocket de progresso**: `socket.io-client` ligado ao `ProgressGateway`
+  (a dep "morta" agora é usada). Progresso em tempo real (por step) com o polling
+  como fallback (4s). Validado com cliente real recebendo eventos ao vivo.
+  *(Observação: durante o teste o ComfyUI segfaultou — reforça a necessidade de
+  supervisão/auto-restart do ComfyUI, item R6 do AUDIT.)*
 - **CRUD de projetos**: criar/renomear/excluir (API `PATCH`/`DELETE` + cascade no
   banco + limpeza dos arquivos no storage) com toasts; **página de detalhe**
   `/projects/[id]`. Galeria extraída em `AssetGallery` (reuso Biblioteca/detalhe).

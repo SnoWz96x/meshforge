@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Sparkles,
@@ -16,6 +16,7 @@ import { Topbar } from "@/components/shell/topbar";
 import { MeshViewer } from "@/components/mesh-viewer";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { api, assetUrl, uploadImage, type Asset, type Generation } from "@/lib/api";
+import { useGenerationProgress } from "@/lib/use-progress";
 import { toast } from "@/lib/toast-store";
 import { cn } from "@/lib/utils";
 
@@ -98,9 +99,16 @@ export default function GeneratePage() {
     queryKey: ["generation", activeId],
     queryFn: () => api.getGeneration(activeId as string),
     enabled: !!activeId,
-    refetchInterval: (q) => (isTerminal(q.state.data?.status) ? false : 1500),
-    refetchIntervalInBackground: true, // 3D demora; segue buscando mesmo sem foco
+    // WebSocket dá o tempo real; o polling fica como fallback mais lento.
+    refetchInterval: (q) => (isTerminal(q.state.data?.status) ? false : 4000),
+    refetchIntervalInBackground: true,
   });
+
+  // Progresso em tempo real via WebSocket (additivo ao polling).
+  const onTerminal = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ["generation", activeId] });
+  }, [qc, activeId]);
+  const ws = useGenerationProgress(activeId, onTerminal);
 
   const cancel = useMutation({
     mutationFn: () => api.cancelGeneration(activeId as string),
@@ -229,7 +237,12 @@ export default function GeneratePage() {
           </p>
         </div>
 
-        <ResultPane active={active} pending={gen.isPending} error={gen.error?.message || upload.error?.message} />
+        <ResultPane
+          active={active}
+          pending={gen.isPending}
+          wsProgress={ws.progress}
+          error={gen.error?.message || upload.error?.message}
+        />
       </div>
     </>
   );
@@ -335,15 +348,20 @@ function Dropzone({
 function ResultPane({
   active,
   pending,
+  wsProgress,
   error,
 }: {
   active?: Generation;
   pending: boolean;
+  wsProgress: number;
   error?: string;
 }) {
   const job = active?.jobs?.[0];
   const outAsset = job?.outputAssets?.[0];
-  const progress = useMemo(() => job?.progress ?? (pending ? 2 : 0), [job, pending]);
+  const progress = useMemo(
+    () => Math.max(job?.progress ?? 0, wsProgress, pending ? 2 : 0),
+    [job, wsProgress, pending],
+  );
   const status = active?.status;
   const isMesh = outAsset?.format === "glb";
   const is3D = (job?.stage ?? "").includes("HUNYUAN3D");
