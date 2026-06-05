@@ -4,6 +4,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Fortalecimento (R3)
+- **Supervisor do ComfyUI** (`tools/bootstrap/comfyui-supervisor.ps1`): mantém o
+  runtime de GPU vivo. Health-check em `:8188/system_stats`; após N falhas
+  consecutivas, mata zumbis (`zluda.exe`/`python main.py`) e religa pelo launcher
+  validado, com polling ativo até subir (período de graça). Tira o "religar à mão"
+  do crash do ZLUDA (exit 139). **Validado ao vivo**: matei o ComfyUI e o supervisor
+  detectou (1/2 → 2/2) e disparou o restart corretamente.
+
 ### Polish (R2)
 - **WebSocket de progresso**: `socket.io-client` ligado ao `ProgressGateway`
   (a dep "morta" agora é usada). Progresso em tempo real (por step) com o polling

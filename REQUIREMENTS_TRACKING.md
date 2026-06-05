@@ -67,6 +67,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | Docker / Docker Compose | ✅ | Postgres/Redis/MinIO |
 | Kubernetes | ⬜ | Futuro |
 | Runtime GPU AMD (ZLUDA) | ✅ | Config validada e versionada (HIP_VISIBLE_DEVICES=1, cuDNN off) |
+| Supervisor do ComfyUI (auto-restart) | ✅ | R3 — `tools/bootstrap/comfyui-supervisor.ps1`: health-check + religa após N falhas (mata zumbis + launcher + polling até subir). Detecção/restart validados ao vivo (ZLUDA exit 139) |
 
 ## 5. Interface (UI premium) — **GRANDE LACUNA ATUAL**
 
