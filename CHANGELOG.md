@@ -5,6 +5,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 ## [Unreleased]
 
 ### Polish (R2)
+- **Toasts globais** (sucesso/erro/info) via store leve (sem dep nova): geração
+  concluída/falha/cancelada, erros de upload/início.
+- **Banner de saúde**: avisa quando API/Redis/ComfyUI estão fora do ar (usa `/health`).
 - **Biblioteca com malhas 3D**: thumbnails 3D leves (montam só quando visíveis,
   IntersectionObserver) + **lightbox** que abre o viewer 3D completo / imagem.
 - **A11y do ⌘K**: removido o Radix Dialog (warning de DialogTitle); overlay próprio + Escape.

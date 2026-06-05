@@ -16,6 +16,7 @@ import { Topbar } from "@/components/shell/topbar";
 import { MeshViewer } from "@/components/mesh-viewer";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { api, assetUrl, uploadImage, type Asset, type Generation } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 import { cn } from "@/lib/utils";
 
 const SIZES = [
@@ -57,6 +58,7 @@ export default function GeneratePage() {
   const upload = useMutation({
     mutationFn: async (file: File) => uploadImage(await ensureProject(), file),
     onSuccess: (a) => setInput(a),
+    onError: (e) => toast.error(`Falha no upload: ${(e as Error).message}`),
   });
 
   const gen = useMutation({
@@ -89,6 +91,7 @@ export default function GeneratePage() {
       });
     },
     onSuccess: (g) => setActiveId(g.id),
+    onError: (e) => toast.error(`Não foi possível iniciar a geração: ${(e as Error).message}`),
   });
 
   const { data: active } = useQuery({
@@ -101,11 +104,22 @@ export default function GeneratePage() {
 
   const cancel = useMutation({
     mutationFn: () => api.cancelGeneration(activeId as string),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["generation", activeId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["generation", activeId] });
+      toast.info("Geração cancelada.");
+    },
   });
 
+  const toastedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (active && isTerminal(active.status)) qc.invalidateQueries({ queryKey: ["assets"] });
+    if (!active || !isTerminal(active.status)) return;
+    if (toastedRef.current === active.id) return;
+    toastedRef.current = active.id;
+    qc.invalidateQueries({ queryKey: ["assets"] });
+    const is3D = (active.jobs?.[0]?.stage ?? "").includes("HUNYUAN3D");
+    if (active.status === "SUCCEEDED") toast.success(is3D ? "Malha 3D gerada!" : "Imagem gerada!");
+    else if (active.status === "FAILED")
+      toast.error(`Falha na geração: ${active.jobs?.[0]?.error ?? "erro desconhecido"}`);
   }, [active, qc]);
 
   const busy = gen.isPending || (!!active && !isTerminal(active.status));

@@ -51,6 +51,8 @@ funcional algo que não esteja realmente implementado e validado.**
 | Cancelamento de geração | ✅ | `POST /generations/:id/cancel` + botão UI (validado E2E) |
 | Health check profundo | ✅ | `/health` checa DB/Redis/ComfyUI (R1) |
 | Tratamento de erros (error boundary, geração atômica, validação env) | ✅ | R1 |
+| Toasts globais (sucesso/erro/info) | ✅ | R2 — store leve; geração/upload/cancelamento |
+| Estado "serviços fora do ar" | ✅ | R2 — banner via `/health` (db/redis/comfyui) |
 | Processamento distribuído | ⬜ | Futuro |
 
 ## 4. Tooling / Infra
