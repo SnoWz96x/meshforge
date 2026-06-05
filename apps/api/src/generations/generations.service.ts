@@ -20,6 +20,8 @@ const STAGE_FOR_TYPE: Partial<Record<GenerationType, JobStage>> = {
   [GenerationType.TEXT_TO_IMAGE]: JobStage.SDXL_TXT2IMG,
   [GenerationType.IMAGE_TO_IMAGE]: JobStage.SDXL_IMG2IMG,
   [GenerationType.IMAGE_TO_3D]: JobStage.HUNYUAN3D_SHAPE,
+  // Pipeline encadeado num job só: txt2img -> shape (não exige imagem de entrada).
+  [GenerationType.TEXT_TO_3D]: JobStage.TEXT_TO_3D,
 };
 
 // Tipos que exigem uma imagem de entrada.

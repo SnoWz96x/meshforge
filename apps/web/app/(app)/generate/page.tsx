@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Loader2, ImageOff, Wand2, Box, Type, UploadCloud, X } from "lucide-react";
+import { Sparkles, Loader2, ImageOff, Wand2, Box, Boxes, Type, UploadCloud, X } from "lucide-react";
 import { Topbar } from "@/components/shell/topbar";
 import { MeshViewer } from "@/components/mesh-viewer";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -22,7 +22,7 @@ const MODES: { id: Mode; label: string; icon: typeof Type; ready: boolean }[] = 
   { id: "TEXT_TO_IMAGE", label: "Texto → Imagem", icon: Type, ready: true },
   { id: "IMAGE_TO_IMAGE", label: "Imagem → Imagem", icon: Wand2, ready: true },
   { id: "IMAGE_TO_3D", label: "Imagem → 3D", icon: Box, ready: true },
-  { id: "TEXT_TO_3D", label: "Texto → 3D", icon: Box, ready: false },
+  { id: "TEXT_TO_3D", label: "Texto → 3D", icon: Boxes, ready: true },
 ];
 
 const isImageInputMode = (m: Mode) => m === "IMAGE_TO_IMAGE" || m === "IMAGE_TO_3D";
@@ -74,6 +74,15 @@ export default function GeneratePage() {
           params: { steps, cfg, denoise },
         });
       }
+      if (mode === "TEXT_TO_3D") {
+        return api.createGeneration({
+          projectId,
+          type: "TEXT_TO_3D",
+          prompt,
+          negativePrompt: negative,
+          params: { width: size.w, height: size.h, steps, cfg },
+        });
+      }
       return api.createGeneration({
         projectId,
         type: "TEXT_TO_IMAGE",
@@ -115,7 +124,7 @@ export default function GeneratePage() {
     if (toastedRef.current === active.id) return;
     toastedRef.current = active.id;
     qc.invalidateQueries({ queryKey: ["assets"] });
-    const is3D = (active.jobs?.[0]?.stage ?? "").includes("HUNYUAN3D");
+    const is3D = (active.jobs?.[0]?.stage ?? "").includes("3D");
     if (active.status === "SUCCEEDED") toast.success(is3D ? "Malha 3D gerada!" : "Imagem gerada!");
     else if (active.status === "FAILED")
       toast.error(`Falha na geração: ${active.jobs?.[0]?.error ?? "erro desconhecido"}`);
@@ -144,6 +153,13 @@ export default function GeneratePage() {
             <p className="-mt-2 text-[11px] leading-relaxed text-content-muted">
               Gera a <b>malha 3D</b> (.glb) na sua GPU. A 1ª pode levar alguns minutos (compilação).
               Textura ainda não — só geometria por enquanto.
+            </p>
+          )}
+          {mode === "TEXT_TO_3D" && (
+            <p className="-mt-2 text-[11px] leading-relaxed text-content-muted">
+              Pipeline em 2 etapas: <b>SDXL</b> cria a imagem do seu prompt e o <b>Hunyuan3D</b> a
+              converte em <b>malha 3D</b> (.glb) — tudo numa geração só. Leva mais tempo (2
+              modelos).
             </p>
           )}
 
@@ -221,7 +237,9 @@ export default function GeneratePage() {
                 ? "Envie uma imagem"
                 : mode === "IMAGE_TO_3D"
                   ? "Gerar malha 3D"
-                  : "Gerar imagem"}
+                  : mode === "TEXT_TO_3D"
+                    ? "Gerar 3D do texto"
+                    : "Gerar imagem"}
           </button>
           {busy && activeId && (
             <button
@@ -361,14 +379,17 @@ function ResultPane({
   error?: string;
 }) {
   const job = active?.jobs?.[0];
-  const outAsset = job?.outputAssets?.[0];
+  // No pipeline Texto→3D há 2 saídas (imagem + malha) — mostra a malha como
+  // resultado principal; nos demais, a primeira saída.
+  const assets = job?.outputAssets ?? [];
+  const outAsset = assets.find((a) => a.format === "glb") ?? assets[0];
   const progress = useMemo(
     () => Math.max(job?.progress ?? 0, wsProgress, pending ? 2 : 0),
     [job, wsProgress, pending],
   );
   const status = active?.status;
   const isMesh = outAsset?.format === "glb";
-  const is3D = (job?.stage ?? "").includes("HUNYUAN3D");
+  const is3D = (job?.stage ?? "").includes("3D");
 
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-base p-8">

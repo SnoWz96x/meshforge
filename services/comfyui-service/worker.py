@@ -107,6 +107,41 @@ def run_job(payload: dict) -> dict:
     params = payload.get("params", {})
     _publish_progress(payload, 5)
 
+    # ---- Pipeline Texto→3D (SDXL txt2img -> Hunyuan3D shape) ----
+    if stage == "TEXT_TO_3D":
+        # Etapa 1/2: gera a imagem a partir do prompt.
+        graph = build_txt2img(params)
+        pid = client.submit(graph)
+        _publish_progress(payload, 8)
+        client.wait(pid, on_progress=lambda p: _publish_progress(payload, max(8, min(45, int(p * 0.45)))))
+        filename, subfolder, ftype = client.first_output_image(pid)
+        img = client.image_bytes(filename, subfolder, ftype)
+        img_uri, img_size = _save_image(payload["projectId"], img)
+        _publish_progress(payload, 48)
+
+        # Etapa 2/2: usa a imagem gerada como entrada do shape (Hunyuan3D).
+        input_name = client.upload_image(img, f"{uuid.uuid4().hex}.png")
+        graph3d = build_image_to_3d(input_name, params)
+        before = set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb"))
+        pid3d = client.submit(graph3d)
+        _publish_progress(payload, 52)
+        client.wait(pid3d, on_progress=lambda p: _publish_progress(payload, max(52, min(95, 50 + int(p * 0.45)))))
+        created = set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb")) - before
+        glb = max(created, key=lambda p: p.stat().st_mtime) if created else _newest_glb()
+        mesh_uri, mesh_size = _save_mesh(payload["projectId"], glb)
+        _publish_progress(payload, 100, status="SUCCEEDED")
+        return {
+            "jobId": payload["jobId"],
+            "status": "SUCCEEDED",
+            "outputs": [
+                {"kind": "IMAGE", "format": "png", "storageUri": img_uri, "sizeBytes": img_size,
+                 "meta": {"width": params.get("width", 1024), "height": params.get("height", 1024),
+                          "stage": "txt2img"}},
+                {"kind": "MESH_RAW", "format": "glb", "storageUri": mesh_uri, "sizeBytes": mesh_size,
+                 "meta": {"source": "hunyuan3d-2", "pipeline": "text-to-3d"}},
+            ],
+        }
+
     # ---- Geração 3D (Hunyuan3D shape) ----
     if stage == "HUNYUAN3D_SHAPE":
         if not payload.get("inputs"):

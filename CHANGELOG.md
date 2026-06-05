@@ -4,6 +4,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Added — Texto→3D (pipeline encadeado)
+- **Texto → 3D (E2E)**: nova `GenerationType.TEXT_TO_3D` que encadeia, **numa
+  geração só**, SDXL txt2img → Hunyuan3D shape. Um job (`JobStage.TEXT_TO_3D`,
+  migração aditiva do enum) roda as 2 etapas sequenciais no worker, com progresso
+  contínuo (0–48% imagem, 50–100% malha) e **2 saídas** (a imagem intermediária
+  `IMAGE` + a malha `MESH_RAW`). UI: modo "Texto → 3D" habilitado (prompt → malha,
+  viewer 3D mostra a malha como resultado principal). Sem entrada de imagem.
+
 ### Fortalecimento (R3)
 - **Modelos Hunyuan3D enxutos (~14 GB recuperados)**: o repo da Tencent traz o
   modelo de forma em 5 arquivos (mesmos pesos em fp16/fp32 × safetensors/.ckpt).

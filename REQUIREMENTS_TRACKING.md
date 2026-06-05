@@ -29,7 +29,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | Text-to-Image | ✅ | E2E validado (API→fila→worker→ComfyUI→storage→DB) |
 | Image-to-Image | ✅ | Validado E2E (upload → SDXL_IMG2IMG na GPU → variação gerada, via UI e API) |
 | Image-to-3D (shape) | ✅ | **Integrado E2E** — UI Imagem→3D (drag&drop) → malha .glb na GPU → viewer 3D. Validado via API e navegador |
-| Text-to-3D | ⬜ | Fase 3 (text→image→3D — encadear SDXL + Hunyuan3D) |
+| Text-to-3D | ✅ | **Encadeado E2E** — `TEXT_TO_3D` roda SDXL txt2img → Hunyuan3D shape num job só (2 saídas: imagem + malha), UI "Texto → 3D". Validado prompt→malha .glb na GPU |
 | Retopologia automática | ⬜ | Fase 4 (Blender + Instant Meshes) |
 | Correção automática de malha | ⬜ | Fase 4 |
 | Ajuste automático de texturas | ⬜ | Fase 4 |
