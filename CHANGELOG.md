@@ -5,6 +5,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 ## [Unreleased]
 
 ### Polish (R2)
+- **CRUD de projetos**: criar/renomear/excluir (API `PATCH`/`DELETE` + cascade no
+  banco + limpeza dos arquivos no storage) com toasts; **página de detalhe**
+  `/projects/[id]`. Galeria extraída em `AssetGallery` (reuso Biblioteca/detalhe).
+  Fix: pipe Zod agora é por-parâmetro (`@Body(...)`) — `@UsePipes` quebrava o `@Param`.
 - **Toasts globais** (sucesso/erro/info) via store leve (sem dep nova): geração
   concluída/falha/cancelada, erros de upload/início.
 - **Banner de saúde**: avisa quando API/Redis/ComfyUI estão fora do ar (usa `/health`).

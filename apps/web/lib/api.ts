@@ -59,6 +59,9 @@ export const api = {
   getProject: (id: string) => req<Project & { generations: Generation[]; assets: Asset[] }>(`/projects/${id}`),
   createProject: (name: string, description?: string) =>
     req<Project>("/projects", { method: "POST", body: JSON.stringify({ name, description }) }),
+  renameProject: (id: string, name: string, description?: string) =>
+    req<Project>(`/projects/${id}`, { method: "PATCH", body: JSON.stringify({ name, description }) }),
+  deleteProject: (id: string) => req<{ ok: boolean }>(`/projects/${id}`, { method: "DELETE" }),
   createGeneration: (input: {
     projectId: string;
     type: string;

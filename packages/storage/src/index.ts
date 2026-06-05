@@ -1,5 +1,5 @@
 import { createReadStream, existsSync, type ReadStream } from "node:fs";
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 // URI no formato `local:<key>` onde key é um caminho relativo à raiz de storage.
@@ -12,6 +12,7 @@ export interface StorageDriver {
   get(key: string): Promise<Buffer>;
   exists(key: string): boolean;
   size(key: string): Promise<number>;
+  removeUnder(prefix: string): Promise<void>;
   localPath(key: string): string;
   stream(key: string): ReadStream;
   toUri(key: string): string;
@@ -51,6 +52,10 @@ export class LocalStorage implements StorageDriver {
 
   async size(key: string): Promise<number> {
     return (await stat(this.localPath(key))).size;
+  }
+
+  async removeUnder(prefix: string): Promise<void> {
+    await rm(this.localPath(prefix), { recursive: true, force: true });
   }
 
   stream(key: string): ReadStream {

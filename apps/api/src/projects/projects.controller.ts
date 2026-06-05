@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UsePipes } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
 import { z } from "zod";
 import { ProjectsService } from "./projects.service.js";
 import { ZodValidationPipe } from "../zod.pipe.js";
@@ -14,8 +14,7 @@ export class ProjectsController {
   constructor(private readonly projects: ProjectsService) {}
 
   @Post()
-  @UsePipes(new ZodValidationPipe(createProjectSchema))
-  create(@Body() body: CreateProject) {
+  create(@Body(new ZodValidationPipe(createProjectSchema)) body: CreateProject) {
     return this.projects.create(body.name, body.description);
   }
 
@@ -27,5 +26,15 @@ export class ProjectsController {
   @Get(":id")
   get(@Param("id") id: string) {
     return this.projects.get(id);
+  }
+
+  @Patch(":id")
+  rename(@Param("id") id: string, @Body(new ZodValidationPipe(createProjectSchema)) body: CreateProject) {
+    return this.projects.rename(id, body.name, body.description);
+  }
+
+  @Delete(":id")
+  remove(@Param("id") id: string) {
+    return this.projects.remove(id);
   }
 }
