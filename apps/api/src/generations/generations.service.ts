@@ -14,7 +14,14 @@ import { PrismaService } from "../prisma.service.js";
 const STAGE_FOR_TYPE: Partial<Record<GenerationType, JobStage>> = {
   [GenerationType.TEXT_TO_IMAGE]: JobStage.SDXL_TXT2IMG,
   [GenerationType.IMAGE_TO_IMAGE]: JobStage.SDXL_IMG2IMG,
+  [GenerationType.IMAGE_TO_3D]: JobStage.HUNYUAN3D_SHAPE,
 };
+
+// Tipos que exigem uma imagem de entrada.
+const NEEDS_INPUT_IMAGE: GenerationType[] = [
+  GenerationType.IMAGE_TO_IMAGE,
+  GenerationType.IMAGE_TO_3D,
+];
 
 @Injectable()
 export class GenerationsService {
@@ -31,11 +38,11 @@ export class GenerationsService {
       );
     }
 
-    // Resolve o asset de entrada (img2img).
+    // Resolve o asset de entrada (img2img / image→3D).
     const inputs: string[] = [];
-    if (input.type === GenerationType.IMAGE_TO_IMAGE) {
+    if (NEEDS_INPUT_IMAGE.includes(input.type)) {
       if (!input.inputAssetId) {
-        throw new BadRequestException("IMAGE_TO_IMAGE requer inputAssetId.");
+        throw new BadRequestException(`${input.type} requer inputAssetId (imagem de entrada).`);
       }
       const asset = await this.prisma.asset.findUnique({ where: { id: input.inputAssetId } });
       if (!asset) throw new NotFoundException(`Asset ${input.inputAssetId} não encontrado`);

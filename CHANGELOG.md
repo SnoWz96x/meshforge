@@ -9,6 +9,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
   `CONFORMANCE_CHECKLIST.md`, `FUTURE_AUTOMATION_ROADMAP.md`.
 - Política "sem placeholders" e checklist de conformidade.
 
+### Added — Fase 3 (geração 3D, shape)
+- **Image→3D integrado no produto (E2E):** UI "Imagem→3D" (drag&drop) → API
+  `IMAGE_TO_3D` → worker `HUNYUAN3D_SHAPE` → ComfyUI/ZLUDA → `.glb` no storage
+  (asset MESH_RAW) → **viewer 3D** (`react-three-fiber`, orbit/auto-rotate).
+  Validado via API e via navegador (~78s com kernels em cache).
+- Worker: stage `HUNYUAN3D_SHAPE` + `hunyuan3d_workflows.build_image_to_3d`.
+- API: `IMAGE_TO_3D` → `HUNYUAN3D_SHAPE`; assets MESH servidos como model/gltf-binary.
+
 ### In progress — Fase 3 (geração 3D)
 - 🏆 **Image→3D (shape) VALIDADO na AMD RX 7800 XT / ZLUDA** — imagem (caneca) →
   malha `.glb` watertight (20k verts / 40k faces) via Hunyuan3D no ComfyUI.

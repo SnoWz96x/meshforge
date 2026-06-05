@@ -25,13 +25,19 @@ class ComfyUIClient:
         resp.raise_for_status()
         return resp.json()["prompt_id"]
 
-    def wait(self, prompt_id: str, on_progress: Callable[[int], None] | None = None) -> None:
+    def wait(
+        self,
+        prompt_id: str,
+        on_progress: Callable[[int], None] | None = None,
+        timeout: int = 1800,
+    ) -> None:
         """Acompanha a execução via WebSocket até o prompt terminar.
 
-        Mapeia as mensagens 'progress' (steps do KSampler) para 0-100.
+        Mapeia as mensagens 'progress' (steps do sampler) para 0-100.
+        timeout maior cobre a 1ª geração 3D (compilação MIOpen ~8min).
         """
         ws_url = f"{self.base_url.replace('http', 'ws')}/ws?clientId={self.client_id}"
-        ws = websocket.create_connection(ws_url, timeout=600)
+        ws = websocket.create_connection(ws_url, timeout=timeout)
         try:
             while True:
                 raw = ws.recv()

@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import shutil
 import sys
 import uuid
 from pathlib import Path
@@ -21,6 +22,7 @@ from bullmq import Worker
 
 from comfyui_client import ComfyUIClient
 from workflows import build_img2img, build_txt2img
+from hunyuan3d_workflows import build_image_to_3d
 
 for _s in (sys.stdout, sys.stderr):
     try:
@@ -31,6 +33,8 @@ for _s in (sys.stdout, sys.stderr):
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
 COMFYUI_URL = os.environ.get("COMFYUI_URL", "http://localhost:8188")
 STORAGE_ROOT = Path(os.environ.get("STORAGE_LOCAL_PATH", "./storage"))
+# Diretório de output do ComfyUI (onde o Hy3DExportMesh salva o .glb).
+COMFYUI_OUTPUT_DIR = Path(os.environ.get("COMFYUI_OUTPUT_DIR", r"C:/ComfyUI-Zluda/output"))
 PROGRESS_CHANNEL = "meshforge:progress"
 
 _rds = redis_sync.from_url(REDIS_URL)
@@ -63,6 +67,25 @@ def _save_image(project_id: str, data: bytes) -> tuple[str, int]:
     return f"local:{key}", len(data)
 
 
+def _save_mesh(project_id: str, src_glb: Path) -> tuple[str, int]:
+    """Copia o .glb gerado para o storage e devolve (storageUri, sizeBytes)."""
+    asset_id = uuid.uuid4().hex
+    key = f"projects/{project_id}/{asset_id}.glb"
+    path = _storage_path(key)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(src_glb, path)
+    return f"local:{key}", path.stat().st_size
+
+
+def _newest_glb() -> Path:
+    """Pega o .glb mais recente do output do ComfyUI (concurrency=1 → seguro)."""
+    glbs = sorted((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb"),
+                  key=lambda p: p.stat().st_mtime, reverse=True)
+    if not glbs:
+        raise RuntimeError("Nenhum .glb encontrado no output do ComfyUI")
+    return glbs[0]
+
+
 def run_job(payload: dict) -> dict:
     """Trabalho bloqueante (roda em thread). Devolve um JobResult."""
     client = ComfyUIClient(COMFYUI_URL)
@@ -70,6 +93,33 @@ def run_job(payload: dict) -> dict:
     params = payload.get("params", {})
     _publish_progress(payload, 5)
 
+    # ---- Geração 3D (Hunyuan3D shape) ----
+    if stage == "HUNYUAN3D_SHAPE":
+        if not payload.get("inputs"):
+            raise ValueError("image→3D sem imagem de entrada")
+        src_key = payload["inputs"][0].split("local:", 1)[-1]
+        src_bytes = _storage_path(src_key).read_bytes()
+        input_name = client.upload_image(src_bytes, f"{uuid.uuid4().hex}.png")
+        graph = build_image_to_3d(input_name, params)
+        prompt_id = client.submit(graph)
+        _publish_progress(payload, 10)
+        client.wait(prompt_id, on_progress=lambda p: _publish_progress(payload, max(10, min(95, p))))
+        glb = _newest_glb()
+        uri, size = _save_mesh(payload["projectId"], glb)
+        _publish_progress(payload, 100, status="SUCCEEDED")
+        return {
+            "jobId": payload["jobId"],
+            "status": "SUCCEEDED",
+            "outputs": [{
+                "kind": "MESH_RAW",
+                "format": "glb",
+                "storageUri": uri,
+                "sizeBytes": size,
+                "meta": {"source": "hunyuan3d-2"},
+            }],
+        }
+
+    # ---- Geração 2D (SDXL) ----
     if stage == "SDXL_IMG2IMG":
         if not payload.get("inputs"):
             raise ValueError("img2img sem imagem de entrada")

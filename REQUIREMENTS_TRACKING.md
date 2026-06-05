@@ -16,7 +16,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | :-- | :-- | :-- |
 | **ComfyUI** | ✅ | Rodando em `C:\ComfyUI-Zluda` :8188 via ZLUDA; gera imagens reais |
 | **Stable Diffusion XL** | ✅ | text2img validado (imagem real gerada na RX 7800 XT) |
-| **Hunyuan3D 2.0** | 🚧 | **Shape (malha) VALIDADO na AMD/ZLUDA** — imagem→.glb watertight (20k verts, ~8min 1ª vez por compilação MIOpen). Falta: integrar no worker (stage HUNYUAN3D_SHAPE) + UI Image→3D + viewer 3D + **textura** (plano B, custom_rasterizer é CUDA-only). |
+| **Hunyuan3D 2.0** | ✅ (shape) | **Image→3D integrado no produto E2E**: API `IMAGE_TO_3D` → worker `HUNYUAN3D_SHAPE` → ComfyUI/ZLUDA → `.glb` no storage (asset MESH_RAW) → **viewer 3D na UI**. ~78s com kernels em cache. **Textura** ainda não (plano B; ver pesquisa: AMD/ROCm emergindo mas imaturo). |
 | **Blender** | 🚧 | 4.2.3 baixado e executa. Automação (retopo/UV/bake) NÃO implementada (Fase 4) |
 
 ## 2. Funcionalidades de geração
@@ -25,8 +25,8 @@ funcional algo que não esteja realmente implementado e validado.**
 | :-- | :-- | :-- |
 | Text-to-Image | ✅ | E2E validado (API→fila→worker→ComfyUI→storage→DB) |
 | Image-to-Image | ✅ | Validado E2E (upload → SDXL_IMG2IMG na GPU → variação gerada, via UI e API) |
-| Image-to-3D (shape) | 🧪 | **Malha .glb validada via ComfyUI direto** (caneca → mesh watertight na RX 7800 XT). Falta plugar no worker/UI |
-| Text-to-3D | ⬜ | Fase 3 (text→image→3D) |
+| Image-to-3D (shape) | ✅ | **Integrado E2E** — UI Imagem→3D (drag&drop) → malha .glb na GPU → viewer 3D. Validado via API e navegador |
+| Text-to-3D | ⬜ | Fase 3 (text→image→3D — encadear SDXL + Hunyuan3D) |
 | Retopologia automática | ⬜ | Fase 4 (Blender + Instant Meshes) |
 | Correção automática de malha | ⬜ | Fase 4 |
 | Ajuste automático de texturas | ⬜ | Fase 4 |
@@ -70,7 +70,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | Área de geração (text2img) | ✅ | Tela "Gerar" 2 painéis → cria geração real → progresso → imagem + download |
 | Galeria / biblioteca (imagens) | ✅ | `/library` lista assets reais do banco; `/projects` lista projetos reais |
 | Áreas Workflow / Exportar (na UI) | 🚧 | Telas presentes mas **honestamente marcadas "em desenvolvimento"** (Fase 5/6) — NÃO fingem funcionar |
-| Visualização 3D em tempo real | ⬜ | Depende da Fase 3 (gerar 3D) |
+| Visualização 3D em tempo real | ✅ | Viewer react-three-fiber (`MeshViewer`) — orbit/auto-rotate, material studio, na tela Gerar |
 | Drag & drop (upload img2img) | ✅ | Dropzone na tela Gerar; upload real → modo Imagem→Imagem |
 | Command palette (⌘K) | ✅ | cmdk: navegação + alternar tema (validado no navegador) |
 

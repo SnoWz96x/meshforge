@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { Topbar } from "@/components/shell/topbar";
+import { MeshViewer } from "@/components/mesh-viewer";
 import { api, assetUrl, uploadImage, type Asset, type Generation } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -26,9 +27,11 @@ type Mode = "TEXT_TO_IMAGE" | "IMAGE_TO_IMAGE" | "IMAGE_TO_3D" | "TEXT_TO_3D";
 const MODES: { id: Mode; label: string; icon: typeof Type; ready: boolean }[] = [
   { id: "TEXT_TO_IMAGE", label: "Texto → Imagem", icon: Type, ready: true },
   { id: "IMAGE_TO_IMAGE", label: "Imagem → Imagem", icon: Wand2, ready: true },
-  { id: "IMAGE_TO_3D", label: "Imagem → 3D", icon: Box, ready: false },
+  { id: "IMAGE_TO_3D", label: "Imagem → 3D", icon: Box, ready: true },
   { id: "TEXT_TO_3D", label: "Texto → 3D", icon: Box, ready: false },
 ];
+
+const isImageInputMode = (m: Mode) => m === "IMAGE_TO_IMAGE" || m === "IMAGE_TO_3D";
 
 const isTerminal = (s?: string) => s === "SUCCEEDED" || s === "FAILED" || s === "CANCELED";
 
@@ -58,6 +61,14 @@ export default function GeneratePage() {
   const gen = useMutation({
     mutationFn: async () => {
       const projectId = await ensureProject();
+      if (mode === "IMAGE_TO_3D") {
+        return api.createGeneration({
+          projectId,
+          type: "IMAGE_TO_3D",
+          inputAssetId: input!.id,
+          params: { steps },
+        });
+      }
       if (mode === "IMAGE_TO_IMAGE") {
         return api.createGeneration({
           projectId,
@@ -91,8 +102,8 @@ export default function GeneratePage() {
   }, [active, qc]);
 
   const busy = gen.isPending || (!!active && !isTerminal(active.status));
-  const needsImage = mode === "IMAGE_TO_IMAGE" && !input;
-  const canGenerate = !busy && prompt.trim() && !needsImage;
+  const needsImage = isImageInputMode(mode) && !input;
+  const canGenerate = !busy && !needsImage && (mode === "IMAGE_TO_3D" || !!prompt.trim());
 
   return (
     <>
@@ -101,7 +112,7 @@ export default function GeneratePage() {
         <div className="flex flex-col gap-5 overflow-y-auto border-r border-border p-5">
           <ModeTabs mode={mode} onMode={setMode} />
 
-          {mode === "IMAGE_TO_IMAGE" && (
+          {isImageInputMode(mode) && (
             <Dropzone
               input={input}
               uploading={upload.isPending}
@@ -109,23 +120,33 @@ export default function GeneratePage() {
               onClear={() => setInput(null)}
             />
           )}
+          {mode === "IMAGE_TO_3D" && (
+            <p className="-mt-2 text-[11px] leading-relaxed text-content-muted">
+              Gera a <b>malha 3D</b> (.glb) na sua GPU. A 1ª pode levar alguns minutos
+              (compilação). Textura ainda não — só geometria por enquanto.
+            </p>
+          )}
 
-          <Field label="Prompt">
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={4}
-              className="w-full resize-none rounded-sm border border-border bg-surface-2 px-3 py-2 text-[13px] text-content outline-none transition-colors focus:border-accent"
-              placeholder="Descreva o que quer gerar…"
-            />
-          </Field>
-          <Field label="Prompt negativo">
-            <input
-              value={negative}
-              onChange={(e) => setNegative(e.target.value)}
-              className="w-full rounded-sm border border-border bg-surface-2 px-3 py-2 text-[13px] text-content outline-none transition-colors focus:border-accent"
-            />
-          </Field>
+          {mode !== "IMAGE_TO_3D" && (
+            <>
+              <Field label="Prompt">
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  rows={4}
+                  className="w-full resize-none rounded-sm border border-border bg-surface-2 px-3 py-2 text-[13px] text-content outline-none transition-colors focus:border-accent"
+                  placeholder="Descreva o que quer gerar…"
+                />
+              </Field>
+              <Field label="Prompt negativo">
+                <input
+                  value={negative}
+                  onChange={(e) => setNegative(e.target.value)}
+                  className="w-full rounded-sm border border-border bg-surface-2 px-3 py-2 text-[13px] text-content outline-none transition-colors focus:border-accent"
+                />
+              </Field>
+            </>
+          )}
 
           {mode === "TEXT_TO_IMAGE" && (
             <Field label="Resolução">
@@ -165,7 +186,13 @@ export default function GeneratePage() {
             )}
           >
             {busy ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
-            {busy ? "Gerando…" : needsImage ? "Envie uma imagem" : "Gerar imagem"}
+            {busy
+              ? "Gerando…"
+              : needsImage
+                ? "Envie uma imagem"
+                : mode === "IMAGE_TO_3D"
+                  ? "Gerar malha 3D"
+                  : "Gerar imagem"}
           </button>
           <p className="text-[11px] leading-relaxed text-content-muted">
             Geração real via ComfyUI + SDXL na sua GPU (ZLUDA). A primeira pode levar mais tempo.
@@ -288,18 +315,24 @@ function ResultPane({
   const outAsset = job?.outputAssets?.[0];
   const progress = useMemo(() => job?.progress ?? (pending ? 2 : 0), [job, pending]);
   const status = active?.status;
+  const isMesh = outAsset?.format === "glb";
+  const is3D = (job?.stage ?? "").includes("HUNYUAN3D");
 
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-base p-8">
       <div className="flex w-full max-w-[560px] flex-col items-center">
         <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-border bg-surface-1">
           {status === "SUCCEEDED" && outAsset ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={assetUrl(outAsset.id)}
-              alt={active?.prompt ?? "resultado"}
-              className="h-full w-full animate-fade-in object-cover"
-            />
+            isMesh ? (
+              <MeshViewer url={assetUrl(outAsset.id)} />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={assetUrl(outAsset.id)}
+                alt={active?.prompt ?? "resultado"}
+                className="h-full w-full animate-fade-in object-cover"
+              />
+            )
           ) : status === "FAILED" ? (
             <Centered>
               <ImageOff size={28} className="text-danger" />
@@ -312,7 +345,11 @@ function ResultPane({
             <Centered>
               <Loader2 size={26} className="animate-spin text-accent" />
               <p className="mt-3 text-[13px] font-medium text-content">
-                {status === "RUNNING" ? "Renderizando na GPU…" : "Na fila…"}
+                {status === "RUNNING"
+                  ? is3D
+                    ? "Gerando malha 3D na GPU…"
+                    : "Renderizando na GPU…"
+                  : "Na fila…"}
               </p>
               <div className="mt-4 h-1 w-48 overflow-hidden rounded-full bg-surface-2">
                 <div
@@ -336,7 +373,7 @@ function ResultPane({
             download
             className="mt-4 rounded-sm border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-medium text-content-secondary transition-colors hover:text-content"
           >
-            Baixar PNG
+            {isMesh ? "Baixar GLB (3D)" : "Baixar PNG"}
           </a>
         )}
       </div>
