@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import shutil
 import sys
@@ -29,6 +30,19 @@ for _s in (sys.stdout, sys.stderr):
         _s.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
     except (AttributeError, ValueError):
         pass
+
+logging.basicConfig(
+    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)-5s %(message)s",
+    datefmt="%H:%M:%S",
+)
+_log = logging.getLogger("meshforge.worker")
+
+
+def log(level: int, job_id: str | None, stage: str | None, msg: str) -> None:
+    """Log estruturado: sempre carrega job/stage para rastreabilidade ponta-a-ponta."""
+    ctx = f"job={job_id or '-'} stage={stage or '-'}"
+    _log.log(level, "[%s] %s", ctx, msg)
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
 COMFYUI_URL = os.environ.get("COMFYUI_URL", "http://localhost:8188")
@@ -158,19 +172,21 @@ def run_job(payload: dict) -> dict:
 
 
 async def process(job, _token):  # noqa: ANN001
-    print(f"▸ job {job.id} stage={job.data.get('stage')}", flush=True)
+    stage = job.data.get("stage")
+    log(logging.INFO, job.id, stage, "iniciando")
     try:
-        return await asyncio.to_thread(run_job, job.data)
+        result = await asyncio.to_thread(run_job, job.data)
+        log(logging.INFO, job.id, stage, f"OK status={result.get('status')}")
+        return result
     except Exception as err:  # noqa: BLE001
-        import traceback
-        traceback.print_exc()
-        print(f"✗ job {job.id} FAILED: {err!r}", flush=True)
+        log(logging.ERROR, job.id, stage, f"FALHOU: {err!r}")
+        _log.exception("traceback do job %s", job.id)
         _publish_progress(job.data, 0, status="FAILED", message=str(err))
         raise
 
 
 async def main() -> None:
-    print(f"🎨 ComfyUI worker online — fila 'comfyui' @ {REDIS_URL}, ComfyUI @ {COMFYUI_URL}", flush=True)
+    _log.info("ComfyUI worker online - fila 'comfyui' @ %s, ComfyUI @ %s", REDIS_URL, COMFYUI_URL)
     worker = Worker("comfyui", process, {"connection": REDIS_URL, "concurrency": 1})
     # Mantém vivo até Ctrl+C.
     try:
@@ -183,4 +199,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("encerrando...", flush=True)
+        _log.info("encerrando...")

@@ -11,6 +11,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
   validado, com polling ativo até subir (período de graça). Tira o "religar à mão"
   do crash do ZLUDA (exit 139). **Validado ao vivo**: matei o ComfyUI e o supervisor
   detectou (1/2 → 2/2) e disparou o restart corretamente.
+- **Logging estruturado (jobId)**: worker Python passa a usar `logging` com
+  contexto `job=<id> stage=<stage>` em cada transição (início/OK/falha) e
+  `LOG_LEVEL` configurável; API (`JobEventsService`) loga `RUNNING/SUCCEEDED/FAILED`
+  com `job`/`gen`/`stage`. Permite seguir um job ponta-a-ponta nos dois lados.
+- **RUNBOOK.md**: guia operacional (ordem de boot, supervisor, health checks,
+  parada, troubleshooting dos incidentes ZLUDA/SSL/portas, rastreabilidade por jobId).
 
 ### Polish (R2)
 - **WebSocket de progresso**: `socket.io-client` ligado ao `ProgressGateway`

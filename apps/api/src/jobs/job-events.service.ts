@@ -54,6 +54,7 @@ export class JobEventsService implements OnModuleInit, OnModuleDestroy {
       status: JobStatus.RUNNING,
       progress: 1,
     });
+    this.logger.log(`[job=${jobId} gen=${job.generationId} stage=${job.stage}] RUNNING`);
   }
 
   private async onCompleted(jobId: string, raw: string | object): Promise<void> {
@@ -92,6 +93,9 @@ export class JobEventsService implements OnModuleInit, OnModuleDestroy {
       status: JobStatus.SUCCEEDED,
       progress: 100,
     });
+    this.logger.log(
+      `[job=${jobId} gen=${job.generationId} stage=${job.stage}] SUCCEEDED (${parsed?.outputs?.length ?? 0} output(s))`,
+    );
   }
 
   private async onFailed(jobId: string, reason: string): Promise<void> {
@@ -113,6 +117,7 @@ export class JobEventsService implements OnModuleInit, OnModuleDestroy {
       progress: job.progress,
       message: reason,
     });
+    this.logger.warn(`[job=${jobId} gen=${job.generationId} stage=${job.stage}] FAILED: ${reason}`);
   }
 
   private async projectIdFor(generationId: string): Promise<string> {

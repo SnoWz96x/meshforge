@@ -68,6 +68,8 @@ funcional algo que não esteja realmente implementado e validado.**
 | Kubernetes | ⬜ | Futuro |
 | Runtime GPU AMD (ZLUDA) | ✅ | Config validada e versionada (HIP_VISIBLE_DEVICES=1, cuDNN off) |
 | Supervisor do ComfyUI (auto-restart) | ✅ | R3 — `tools/bootstrap/comfyui-supervisor.ps1`: health-check + religa após N falhas (mata zumbis + launcher + polling até subir). Detecção/restart validados ao vivo (ZLUDA exit 139) |
+| Logging estruturado (jobId) | ✅ | R3 — worker (`logging` com `job=/stage=`, `LOG_LEVEL`) + API (`JobEventsService` loga RUNNING/SUCCEEDED/FAILED com job/gen/stage) |
+| RUNBOOK operacional | ✅ | R3 — `RUNBOOK.md` (ordem de boot, supervisor, health, parada, troubleshooting ZLUDA/SSL/portas) |
 
 ## 5. Interface (UI premium) — **GRANDE LACUNA ATUAL**
 
