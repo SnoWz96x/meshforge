@@ -1,0 +1,13 @@
+node_modules
+dist
+.next
+build
+coverage
+pnpm-lock.yaml
+*.md
+storage
+auxiliary-tools
+packages/db/generated
+**/next-env.d.ts
+**/.venv
+**/__pycache__

@@ -19,7 +19,9 @@ export function AssetGallery({ assets, emptyHint }: { assets: Asset[]; emptyHint
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <Images size={30} className="text-content-muted" />
         <p className="mt-3 text-[14px] font-medium text-content">Nada aqui ainda</p>
-        <p className="mt-1 text-[12px] text-content-muted">{emptyHint ?? "Gere imagens ou malhas para vê-las aqui."}</p>
+        <p className="mt-1 text-[12px] text-content-muted">
+          {emptyHint ?? "Gere imagens ou malhas para vê-las aqui."}
+        </p>
       </div>
     );
   }
@@ -74,7 +76,11 @@ export function AssetGallery({ assets, emptyHint }: { assets: Asset[]; emptyHint
                 </ErrorBoundary>
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={assetUrl(selected.id)} alt={selected.id} className="h-full w-full bg-base object-contain" />
+                <img
+                  src={assetUrl(selected.id)}
+                  alt={selected.id}
+                  className="h-full w-full bg-base object-contain"
+                />
               )}
             </div>
             <div className="flex items-center justify-between border-t border-border px-4 py-2.5">

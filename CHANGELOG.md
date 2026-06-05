@@ -17,6 +17,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
   com `job`/`gen`/`stage`. Permite seguir um job ponta-a-ponta nos dois lados.
 - **RUNBOOK.md**: guia operacional (ordem de boot, supervisor, health checks,
   parada, troubleshooting dos incidentes ZLUDA/SSL/portas, rastreabilidade por jobId).
+- **Testes**: Vitest (16 testes — `storage` round-trip/traversal/removeUnder e
+  contratos zod `jobResult`/`progressEvent`/`createGeneration`) + pytest (8 testes
+  dos construtores de workflow SDXL e Hunyuan3D: estrutura, ligações entre nós,
+  defaults/overrides). `pnpm test` + `pytest`.
+- **Qualidade de código**: Prettier (padrão único, base inteira formatada) +
+  ESLint flat config (typescript-eslint) para backend/packages/tools — `pnpm lint`
+  e `pnpm format` limpos. Web segue no `next lint`.
+- **CI (GitHub Actions)** `.github/workflows/ci.yml`: em push/PR roda
+  format:check + lint + typecheck + testes (Node) e os testes dos workflow builders
+  (Python), com cache pnpm e cancelamento de execuções antigas.
 
 ### Polish (R2)
 - **WebSocket de progresso**: `socket.io-client` ligado ao `ProgressGateway`

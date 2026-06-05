@@ -56,11 +56,15 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   listProjects: () => req<Project[]>("/projects"),
-  getProject: (id: string) => req<Project & { generations: Generation[]; assets: Asset[] }>(`/projects/${id}`),
+  getProject: (id: string) =>
+    req<Project & { generations: Generation[]; assets: Asset[] }>(`/projects/${id}`),
   createProject: (name: string, description?: string) =>
     req<Project>("/projects", { method: "POST", body: JSON.stringify({ name, description }) }),
   renameProject: (id: string, name: string, description?: string) =>
-    req<Project>(`/projects/${id}`, { method: "PATCH", body: JSON.stringify({ name, description }) }),
+    req<Project>(`/projects/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name, description }),
+    }),
   deleteProject: (id: string) => req<{ ok: boolean }>(`/projects/${id}`, { method: "DELETE" }),
   createGeneration: (input: {
     projectId: string;

@@ -69,10 +69,7 @@ export async function publishProgress(ev: ProgressEvent, connection?: Redis): Pr
   await conn.publish(PROGRESS_CHANNEL, JSON.stringify(ev));
 }
 
-export function subscribeProgress(
-  handler: (ev: ProgressEvent) => void,
-  connection?: Redis,
-): Redis {
+export function subscribeProgress(handler: (ev: ProgressEvent) => void, connection?: Redis): Redis {
   const sub = connection ?? createConnection();
   void sub.subscribe(PROGRESS_CHANNEL);
   sub.on("message", (_channel, message) => {

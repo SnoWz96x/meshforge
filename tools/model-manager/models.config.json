@@ -45,11 +45,7 @@
       "source": "hf",
       "repoId": "tencent/Hunyuan3D-2",
       "revision": "main",
-      "allowPatterns": [
-        "hunyuan3d-dit-v2-0/*",
-        "hunyuan3d-vae-v2-0/*",
-        "hunyuan3d-paint-v2-0/*"
-      ],
+      "allowPatterns": ["hunyuan3d-dit-v2-0/*", "hunyuan3d-vae-v2-0/*", "hunyuan3d-paint-v2-0/*"],
       "target": "models/hunyuan3d",
       "approxSizeGB": 12.0,
       "description": "Hunyuan3D 2.0 — shape (DiT+VAE) e paint (textura)."

@@ -11,7 +11,12 @@ function ThumbModel({ url }: { url: string }) {
   useMemo(() => {
     scene.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (m.isMesh) m.material = new THREE.MeshStandardMaterial({ color: "#c6c8d2", roughness: 0.6, metalness: 0.05 });
+      if (m.isMesh)
+        m.material = new THREE.MeshStandardMaterial({
+          color: "#c6c8d2",
+          roughness: 0.6,
+          metalness: 0.05,
+        });
     });
   }, [scene]);
   return (
@@ -47,7 +52,13 @@ export function MeshThumb({ url }: { url: string }) {
           <Suspense fallback={null}>
             <ThumbModel url={url} />
           </Suspense>
-          <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={2.2} makeDefault />
+          <OrbitControls
+            enableZoom={false}
+            enablePan={false}
+            autoRotate
+            autoRotateSpeed={2.2}
+            makeDefault
+          />
         </Canvas>
       ) : (
         <div className="grid h-full w-full place-items-center">

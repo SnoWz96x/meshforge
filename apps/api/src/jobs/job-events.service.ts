@@ -67,7 +67,7 @@ export class JobEventsService implements OnModuleInit, OnModuleDestroy {
     for (const out of parsed?.outputs ?? []) {
       await this.prisma.asset.create({
         data: {
-          projectId: job.generationId ? (await this.projectIdFor(job.generationId)) : "",
+          projectId: job.generationId ? await this.projectIdFor(job.generationId) : "",
           kind: out.kind,
           format: out.format,
           storageUri: out.storageUri,

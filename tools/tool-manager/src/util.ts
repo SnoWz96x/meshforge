@@ -41,7 +41,10 @@ export async function downloadFile(url: string, dest: string): Promise<void> {
   if (!res.ok || !res.body) {
     throw new Error(`Download falhou ${res.status} ${res.statusText}: ${url}`);
   }
-  await pipeline(Readable.fromWeb(res.body as Parameters<typeof Readable.fromWeb>[0]), createWriteStream(dest));
+  await pipeline(
+    Readable.fromWeb(res.body as Parameters<typeof Readable.fromWeb>[0]),
+    createWriteStream(dest),
+  );
 }
 
 // Extrai .zip usando o tar nativo do Windows 10+/Linux (suporta zip).

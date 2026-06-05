@@ -2,16 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Sparkles,
-  Loader2,
-  ImageOff,
-  Wand2,
-  Box,
-  Type,
-  UploadCloud,
-  X,
-} from "lucide-react";
+import { Sparkles, Loader2, ImageOff, Wand2, Box, Type, UploadCloud, X } from "lucide-react";
 import { Topbar } from "@/components/shell/topbar";
 import { MeshViewer } from "@/components/mesh-viewer";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -151,8 +142,8 @@ export default function GeneratePage() {
           )}
           {mode === "IMAGE_TO_3D" && (
             <p className="-mt-2 text-[11px] leading-relaxed text-content-muted">
-              Gera a <b>malha 3D</b> (.glb) na sua GPU. A 1ª pode levar alguns minutos
-              (compilação). Textura ainda não — só geometria por enquanto.
+              Gera a <b>malha 3D</b> (.glb) na sua GPU. A 1ª pode levar alguns minutos (compilação).
+              Textura ainda não — só geometria por enquanto.
             </p>
           )}
 
@@ -203,7 +194,14 @@ export default function GeneratePage() {
             <Slider label="CFG" value={cfg} min={1} max={12} onChange={setCfg} />
           </div>
           {mode === "IMAGE_TO_IMAGE" && (
-            <Slider label="Denoise" value={denoise} min={0.2} max={0.9} step={0.05} onChange={setDenoise} />
+            <Slider
+              label="Denoise"
+              value={denoise}
+              min={0.2}
+              max={0.9}
+              step={0.05}
+              onChange={setDenoise}
+            />
           )}
 
           <button
@@ -211,7 +209,9 @@ export default function GeneratePage() {
             onClick={() => gen.mutate()}
             className={cn(
               "mt-1 flex items-center justify-center gap-2 rounded-sm bg-accent px-4 py-2.5 text-[13px] font-semibold text-white transition-all duration-150 ease-out",
-              !canGenerate ? "cursor-not-allowed opacity-50" : "hover:bg-accent-hover hover:shadow-glow",
+              !canGenerate
+                ? "cursor-not-allowed opacity-50"
+                : "hover:bg-accent-hover hover:shadow-glow",
             )}
           >
             {busy ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
@@ -267,7 +267,9 @@ function ModeTabs({ mode, onMode }: { mode: Mode; onMode: (m: Mode) => void }) {
         >
           <Icon size={14} />
           <span className="truncate">{label}</span>
-          {!ready && <span className="ml-auto text-[9px] uppercase text-content-muted">em breve</span>}
+          {!ready && (
+            <span className="ml-auto text-[9px] uppercase text-content-muted">em breve</span>
+          )}
         </button>
       ))}
     </div>
@@ -320,7 +322,9 @@ function Dropzone({
       }}
       className={cn(
         "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-sm border border-dashed px-4 py-7 text-center transition-colors",
-        drag ? "border-accent bg-accent-soft" : "border-border-strong bg-surface-2 hover:border-accent",
+        drag
+          ? "border-accent bg-accent-soft"
+          : "border-border-strong bg-surface-2 hover:border-accent",
       )}
     >
       {uploading ? (
@@ -417,7 +421,9 @@ function ResultPane({
             <Centered>
               <Sparkles size={26} className="text-content-muted" />
               <p className="mt-3 text-[13px] text-content-secondary">Seu resultado aparece aqui</p>
-              <p className="mt-1 text-[11px] text-content-muted">Escreva um prompt e clique em Gerar</p>
+              <p className="mt-1 text-[11px] text-content-muted">
+                Escreva um prompt e clique em Gerar
+              </p>
             </Centered>
           )}
         </div>
@@ -437,13 +443,17 @@ function ResultPane({
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
-  return <div className="absolute inset-0 flex flex-col items-center justify-center">{children}</div>;
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center">{children}</div>
+  );
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-content-muted">{label}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-content-muted">
+        {label}
+      </span>
       {children}
     </label>
   );

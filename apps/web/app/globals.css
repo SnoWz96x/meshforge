@@ -55,13 +55,18 @@
     background: var(--accent-soft);
   }
   /* Scrollbar discreta */
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
   ::-webkit-scrollbar-thumb {
     background: var(--surface-2);
     border-radius: 8px;
     border: 2px solid var(--bg-base);
   }
-  ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--border-strong);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

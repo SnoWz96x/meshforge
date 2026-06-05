@@ -39,7 +39,10 @@ export function CommandPalette() {
   // mantém o controle total do estilo.
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[18vh]">
-      <div className="absolute inset-0 animate-fade-in bg-black/50" onClick={() => setOpen(false)} />
+      <div
+        className="absolute inset-0 animate-fade-in bg-black/50"
+        onClick={() => setOpen(false)}
+      />
       <Command
         label="Paleta de comandos"
         className="relative w-full max-w-[520px] animate-slide-up overflow-hidden rounded-lg border border-border bg-surface-overlay shadow-overlay"

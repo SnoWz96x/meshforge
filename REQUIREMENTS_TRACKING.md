@@ -70,6 +70,9 @@ funcional algo que não esteja realmente implementado e validado.**
 | Supervisor do ComfyUI (auto-restart) | ✅ | R3 — `tools/bootstrap/comfyui-supervisor.ps1`: health-check + religa após N falhas (mata zumbis + launcher + polling até subir). Detecção/restart validados ao vivo (ZLUDA exit 139) |
 | Logging estruturado (jobId) | ✅ | R3 — worker (`logging` com `job=/stage=`, `LOG_LEVEL`) + API (`JobEventsService` loga RUNNING/SUCCEEDED/FAILED com job/gen/stage) |
 | RUNBOOK operacional | ✅ | R3 — `RUNBOOK.md` (ordem de boot, supervisor, health, parada, troubleshooting ZLUDA/SSL/portas) |
+| Testes automatizados | ✅ | R3 — Vitest (16: storage + contratos zod) + pytest (8: workflow builders SDXL/Hunyuan3D). `pnpm test` / `pytest` |
+| ESLint + Prettier | ✅ | R3 — flat config typescript-eslint + Prettier (base formatada); `pnpm lint`/`format` limpos |
+| CI (GitHub Actions) | ✅ | R3 — `.github/workflows/ci.yml`: format/lint/typecheck/test (Node) + pytest (Python) em push/PR |
 
 ## 5. Interface (UI premium) — **GRANDE LACUNA ATUAL**
 

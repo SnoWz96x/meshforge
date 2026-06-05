@@ -1,0 +1,3 @@
+# Dependências de desenvolvimento/teste do worker (não necessárias em produção).
+-r requirements.txt
+pytest>=8.0

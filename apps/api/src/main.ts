@@ -16,7 +16,6 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   await app.listen(PORT);
-  // eslint-disable-next-line no-console
   console.log(`🚀 MeshForge API on http://localhost:${PORT}`);
 }
 

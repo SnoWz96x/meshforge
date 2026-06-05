@@ -29,7 +29,10 @@ export class ProjectsController {
   }
 
   @Patch(":id")
-  rename(@Param("id") id: string, @Body(new ZodValidationPipe(createProjectSchema)) body: CreateProject) {
+  rename(
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(createProjectSchema)) body: CreateProject,
+  ) {
     return this.projects.rename(id, body.name, body.description);
   }
 

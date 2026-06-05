@@ -12,13 +12,10 @@ const schema = z.object({
 export function validateEnv(): void {
   const result = schema.safeParse(process.env);
   if (!result.success) {
-    // eslint-disable-next-line no-console
     console.error("❌ Variáveis de ambiente inválidas/ausentes:");
     for (const issue of result.error.issues) {
-      // eslint-disable-next-line no-console
       console.error(`   - ${issue.path.join(".")}: ${issue.message}`);
     }
-    // eslint-disable-next-line no-console
     console.error("   Copie .env.example para .env e ajuste os valores.");
     process.exit(1);
   }

@@ -95,9 +95,7 @@ async function cmdInstall(): Promise<void> {
     console.log(`▸ ${name}`);
     try {
       const installed =
-        entry.type === "git"
-          ? await installGit(name, entry)
-          : await installRelease(name, entry);
+        entry.type === "git" ? await installGit(name, entry) : await installRelease(name, entry);
       lock.tools[name] = installed;
       await writeLock(lock);
     } catch (err) {

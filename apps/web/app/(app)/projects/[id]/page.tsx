@@ -50,7 +50,10 @@ export default function ProjectDetailPage() {
               )}
               <p className="mt-1 text-[11px] text-content-muted">{assets.length} assets</p>
             </div>
-            <AssetGallery assets={assets} emptyHint="Este projeto ainda não tem imagens ou malhas." />
+            <AssetGallery
+              assets={assets}
+              emptyHint="Este projeto ainda não tem imagens ou malhas."
+            />
           </>
         )}
       </div>

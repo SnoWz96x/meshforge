@@ -22,10 +22,7 @@ export const releaseToolSchema = z.object({
   githubRepo: z.string().optional(),
 });
 
-export const toolEntrySchema = z.discriminatedUnion("type", [
-  gitToolSchema,
-  releaseToolSchema,
-]);
+export const toolEntrySchema = z.discriminatedUnion("type", [gitToolSchema, releaseToolSchema]);
 export type ToolEntry = z.infer<typeof toolEntrySchema>;
 
 export const toolManifestSchema = z.record(toolEntrySchema);

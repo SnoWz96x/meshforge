@@ -16,13 +16,27 @@ import {
 import { cn } from "@/lib/utils";
 
 type MaterialMode = "studio" | "normal" | "clay";
-const MATERIAL_LABEL: Record<MaterialMode, string> = { studio: "Studio", normal: "Normais", clay: "Argila" };
+const MATERIAL_LABEL: Record<MaterialMode, string> = {
+  studio: "Studio",
+  normal: "Normais",
+  clay: "Argila",
+};
 
 function makeMaterial(mode: MaterialMode, wireframe: boolean): THREE.Material {
   if (mode === "normal") return new THREE.MeshNormalMaterial({ wireframe });
   if (mode === "clay")
-    return new THREE.MeshStandardMaterial({ color: "#d9c3a5", roughness: 0.9, metalness: 0, wireframe });
-  return new THREE.MeshStandardMaterial({ color: "#c6c8d2", roughness: 0.62, metalness: 0.05, wireframe });
+    return new THREE.MeshStandardMaterial({
+      color: "#d9c3a5",
+      roughness: 0.9,
+      metalness: 0,
+      wireframe,
+    });
+  return new THREE.MeshStandardMaterial({
+    color: "#c6c8d2",
+    roughness: 0.62,
+    metalness: 0.05,
+    wireframe,
+  });
 }
 
 interface Stats {
@@ -126,7 +140,9 @@ export function MeshViewer({ url }: { url: string }) {
 
       <div className="absolute left-1/2 top-3 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-border bg-surface-overlay/90 p-1 backdrop-blur">
         <ToolBtn
-          onClick={() => setMaterial((m) => (m === "studio" ? "normal" : m === "normal" ? "clay" : "studio"))}
+          onClick={() =>
+            setMaterial((m) => (m === "studio" ? "normal" : m === "normal" ? "clay" : "studio"))
+          }
           title={`Material: ${MATERIAL_LABEL[material]}`}
         >
           <Palette size={15} />
@@ -149,10 +165,16 @@ export function MeshViewer({ url }: { url: string }) {
       <div className="absolute bottom-3 left-3 flex items-center gap-3 rounded-md border border-border bg-surface-overlay/80 px-2.5 py-1.5 font-mono text-[10px] text-content-muted backdrop-blur">
         <BoxIcon size={12} className="text-accent" />
         <span>
-          <b className="text-content-secondary">{stats ? stats.vertices.toLocaleString("pt-BR") : "—"}</b> verts
+          <b className="text-content-secondary">
+            {stats ? stats.vertices.toLocaleString("pt-BR") : "—"}
+          </b>{" "}
+          verts
         </span>
         <span>
-          <b className="text-content-secondary">{stats ? stats.faces.toLocaleString("pt-BR") : "—"}</b> faces
+          <b className="text-content-secondary">
+            {stats ? stats.faces.toLocaleString("pt-BR") : "—"}
+          </b>{" "}
+          faces
         </span>
         <span>
           {MATERIAL_LABEL[material]}
@@ -180,7 +202,9 @@ function ToolBtn({
       title={title}
       className={cn(
         "grid h-7 w-7 place-items-center rounded-sm transition-colors",
-        active ? "bg-accent-soft text-accent" : "text-content-secondary hover:bg-surface-2 hover:text-content",
+        active
+          ? "bg-accent-soft text-accent"
+          : "text-content-secondary hover:bg-surface-2 hover:text-content",
       )}
     >
       {children}

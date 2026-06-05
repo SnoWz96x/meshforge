@@ -35,7 +35,9 @@ export function HealthBanner() {
     .filter(([, v]) => !v.ok)
     .map(([k]) => LABEL[k] ?? k);
 
-  return <Banner>Serviços indisponíveis: {down.join(", ")}. Gerações podem falhar até voltarem.</Banner>;
+  return (
+    <Banner>Serviços indisponíveis: {down.join(", ")}. Gerações podem falhar até voltarem.</Banner>
+  );
 }
 
 function Banner({ children }: { children: React.ReactNode }) {
