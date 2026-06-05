@@ -4,6 +4,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Polish (R2)
+- **Viewer 3D profissional** (`MeshViewer`): toolbar flutuante (materiais studio/normais/
+  argila, wireframe, grade, reset de câmera, tela cheia) + painel de stats (verts/faces).
+  **Validado pelo usuário** (bule → malha 20k verts / 40k faces renderizada no navegador).
+
 ### Stabilization (R1)
 - **Error boundary** no front (protege contra crash do viewer 3D / white-screen).
 - **Geração atômica**: se o enqueue falhar (Redis off), marca FAILED (sem órfãs QUEUED).
