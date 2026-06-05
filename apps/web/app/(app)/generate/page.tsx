@@ -95,6 +95,7 @@ export default function GeneratePage() {
     queryFn: () => api.getGeneration(activeId as string),
     enabled: !!activeId,
     refetchInterval: (q) => (isTerminal(q.state.data?.status) ? false : 1500),
+    refetchIntervalInBackground: true, // 3D demora; segue buscando mesmo sem foco
   });
 
   useEffect(() => {
