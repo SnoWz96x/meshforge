@@ -66,6 +66,11 @@ aparece (ou some). Confirme via health (seção 4).
 O ZLUDA é frágil: sob carga repetida o ComfyUI pode cair com **segfault
 (exit 139)**. O supervisor observa `:8188` e religa sozinho.
 
+> Por padrão o supervisor usa o **launcher de textura** (`mf-run-tex.bat`, com
+> `HUNYUAN3D_TEXTURE_DEVICE=cpu`) — inofensivo para gerações sem textura e garante
+> que a texturização siga funcionando após um restart. Para o launcher sem textura:
+> `... comfyui-supervisor.ps1 -Launcher "C:\ComfyUI-Zluda\mf-run.bat"`.
+
 ```powershell
 # padrão (checa a cada 10s, religa após 3 falhas, 90s de graça no boot)
 powershell -ExecutionPolicy Bypass -File tools\bootstrap\comfyui-supervisor.ps1

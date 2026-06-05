@@ -37,7 +37,11 @@
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
-    [string]$Launcher      = "C:\ComfyUI-Zluda\mf-run.bat",
+    # Default: launcher de TEXTURA (HUNYUAN3D_TEXTURE_DEVICE=cpu). A env e inofensiva
+    # para gerações sem textura (SDXL/shape nao usam o MeshRender) e garante que a
+    # texturização continue funcionando se o ComfyUI cair e o supervisor religar.
+    # Para o launcher sem textura, passe -Launcher "C:\ComfyUI-Zluda\mf-run.bat".
+    [string]$Launcher      = "C:\ComfyUI-Zluda\mf-run-tex.bat",
     [string]$Url           = "http://localhost:8188/system_stats",
     [int]   $IntervalSec   = 10,
     [int]   $FailThreshold = 3,
