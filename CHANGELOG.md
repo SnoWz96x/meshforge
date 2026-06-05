@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Stabilization (R1)
+- **Error boundary** no front (protege contra crash do viewer 3D / white-screen).
+- **Geração atômica**: se o enqueue falhar (Redis off), marca FAILED (sem órfãs QUEUED).
+- **Cancelamento de geração**: `POST /generations/:id/cancel` (remove da fila / `/interrupt`
+  no ComfyUI) + botão "Cancelar" na UI; guards impedem ressurreição por eventos atrasados.
+- **Health profundo**: `/health` checa DB + Redis + ComfyUI (status ok/degraded).
+- **Validação de env** no boot da API (falha clara se faltar config).
+- **Worker**: identifica o `.glb` novo por diff (robusto vs mtime/corrida).
+
 ### Audit
 - **AUDIT.md**: auditoria completa fundamentada no código (bugs, arquitetura,
   performance, UX, deps mortas, fluxos incompletos) + roadmap de refinamento

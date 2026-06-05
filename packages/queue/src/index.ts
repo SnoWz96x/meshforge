@@ -35,6 +35,19 @@ export async function enqueue(name: QueueName, payload: JobPayload): Promise<voi
   });
 }
 
+// Remove um job da fila (se ainda estiver waiting/delayed). Jobs já em execução
+// não são removidos daqui — o cancelamento "ativo" usa o /interrupt do ComfyUI.
+export async function removeJob(name: QueueName, jobId: string): Promise<boolean> {
+  const job = await getQueue(name).getJob(jobId);
+  if (!job) return false;
+  try {
+    await job.remove();
+    return true;
+  } catch {
+    return false; // provavelmente já está active (em execução)
+  }
+}
+
 // Cria um Worker tipado para uma fila.
 export function createWorker(
   name: QueueName,

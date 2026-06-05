@@ -101,10 +101,15 @@ def run_job(payload: dict) -> dict:
         src_bytes = _storage_path(src_key).read_bytes()
         input_name = client.upload_image(src_bytes, f"{uuid.uuid4().hex}.png")
         graph = build_image_to_3d(input_name, params)
+        # Snapshot dos .glb existentes p/ identificar o novo (robusto vs mtime/corrida).
+        before = set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb"))
         prompt_id = client.submit(graph)
         _publish_progress(payload, 10)
         client.wait(prompt_id, on_progress=lambda p: _publish_progress(payload, max(10, min(95, p))))
-        glb = _newest_glb()
+        created = sorted((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb")) and (
+            set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb")) - before
+        )
+        glb = max(created, key=lambda p: p.stat().st_mtime) if created else _newest_glb()
         uri, size = _save_mesh(payload["projectId"], glb)
         _publish_progress(payload, 100, status="SUCCEEDED")
         return {

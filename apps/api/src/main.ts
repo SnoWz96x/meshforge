@@ -1,6 +1,9 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module.js";
+import { validateEnv } from "./env.js";
+
+validateEnv();
 
 // Asset.sizeBytes é BigInt no Prisma; permite serializá-lo em JSON.
 (BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function (this: bigint) {

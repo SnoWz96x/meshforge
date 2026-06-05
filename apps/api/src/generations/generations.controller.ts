@@ -17,4 +17,9 @@ export class GenerationsController {
   get(@Param("id") id: string) {
     return this.generations.get(id);
   }
+
+  @Post(":id/cancel")
+  cancel(@Param("id") id: string) {
+    return this.generations.cancel(id);
+  }
 }

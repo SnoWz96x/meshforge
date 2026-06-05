@@ -25,7 +25,7 @@ a base. Detalhes e priorização em **[AUDIT.md](AUDIT.md)**.
 
 | Etapa | Conteúdo | Status |
 | :-- | :-- | :-- |
-| **R1 — Estabilização** | error boundary, geração atômica, glb por history, supervisão ComfyUI, health profundo, validação de env, cancelamento | ⬜ |
+| **R1 — Estabilização** | ✅ error boundary, ✅ geração atômica, ✅ glb robusto (diff), ✅ health profundo (db/redis/comfyui), ✅ validação de env, ✅ cancelamento. 🚧 supervisão/auto-restart do ComfyUI (health detecta; restart automático pendente) | 🚧 quase |
 | **R2 — Polimento** | viewer 3D profissional, biblioteca com malhas+thumbnails, WebSocket de progresso, toasts, CRUD projetos | ⬜ |
 | **R3 — Fortalecimento** | ESLint/Prettier/CI, testes, logger estruturado, métricas, RUNBOOK, conformance checker, otimização de disco/thumbnails | ⬜ |
 

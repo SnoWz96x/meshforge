@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Topbar } from "@/components/shell/topbar";
 import { MeshViewer } from "@/components/mesh-viewer";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { api, assetUrl, uploadImage, type Asset, type Generation } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -96,6 +97,11 @@ export default function GeneratePage() {
     enabled: !!activeId,
     refetchInterval: (q) => (isTerminal(q.state.data?.status) ? false : 1500),
     refetchIntervalInBackground: true, // 3D demora; segue buscando mesmo sem foco
+  });
+
+  const cancel = useMutation({
+    mutationFn: () => api.cancelGeneration(activeId as string),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["generation", activeId] }),
   });
 
   useEffect(() => {
@@ -195,6 +201,15 @@ export default function GeneratePage() {
                   ? "Gerar malha 3D"
                   : "Gerar imagem"}
           </button>
+          {busy && activeId && (
+            <button
+              onClick={() => cancel.mutate()}
+              disabled={cancel.isPending}
+              className="flex items-center justify-center gap-2 rounded-sm border border-border bg-surface-2 px-4 py-2 text-[12px] font-medium text-content-secondary transition-colors hover:border-danger hover:text-danger disabled:opacity-50"
+            >
+              {cancel.isPending ? "Cancelando…" : "Cancelar geração"}
+            </button>
+          )}
           <p className="text-[11px] leading-relaxed text-content-muted">
             Geração real via ComfyUI + SDXL na sua GPU (ZLUDA). A primeira pode levar mais tempo.
           </p>
@@ -325,7 +340,9 @@ function ResultPane({
         <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-border bg-surface-1">
           {status === "SUCCEEDED" && outAsset ? (
             isMesh ? (
-              <MeshViewer url={assetUrl(outAsset.id)} />
+              <ErrorBoundary compact label="Não foi possível abrir a malha 3D">
+                <MeshViewer url={assetUrl(outAsset.id)} />
+              </ErrorBoundary>
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -358,6 +375,11 @@ function ResultPane({
                   style={{ width: `${Math.max(progress, 4)}%` }}
                 />
               </div>
+            </Centered>
+          ) : status === "CANCELED" ? (
+            <Centered>
+              <ImageOff size={26} className="text-content-muted" />
+              <p className="mt-3 text-[13px] font-medium text-content">Geração cancelada</p>
             </Centered>
           ) : (
             <Centered>

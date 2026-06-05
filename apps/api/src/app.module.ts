@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { HealthController } from "./health.controller.js";
 import { HealthService } from "./health.service.js";
+import { PrismaService } from "./prisma.service.js";
 import { ProjectsModule } from "./projects/projects.module.js";
 import { GenerationsModule } from "./generations/generations.module.js";
 import { AssetsModule } from "./assets/assets.module.js";
@@ -10,6 +11,6 @@ import { JobsModule } from "./jobs/jobs.module.js";
 @Module({
   imports: [ProjectsModule, GenerationsModule, AssetsModule, ProgressModule, JobsModule],
   controllers: [HealthController],
-  providers: [HealthService],
+  providers: [HealthService, PrismaService],
 })
 export class AppModule {}

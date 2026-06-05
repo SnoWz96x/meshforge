@@ -68,6 +68,8 @@ export const api = {
     params?: Record<string, unknown>;
   }) => req<Generation>("/generations", { method: "POST", body: JSON.stringify(input) }),
   getGeneration: (id: string) => req<Generation>(`/generations/${id}`),
+  cancelGeneration: (id: string) =>
+    req<Generation>(`/generations/${id}/cancel`, { method: "POST" }),
 };
 
 // Upload multipart (não usa o helper req(): o browser define o boundary).

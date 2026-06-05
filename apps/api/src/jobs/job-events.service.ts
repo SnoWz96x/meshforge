@@ -37,6 +37,8 @@ export class JobEventsService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async onActive(jobId: string): Promise<void> {
+    const existing = await this.prisma.job.findUnique({ where: { id: jobId } });
+    if (existing?.status === "CANCELED") return; // não reativa job cancelado
     const job = await this.prisma.job.update({
       where: { id: jobId },
       data: { status: JobStatus.RUNNING, startedAt: new Date(), progress: 1 },
@@ -58,6 +60,7 @@ export class JobEventsService implements OnModuleInit, OnModuleDestroy {
     const parsed = this.parseResult(raw);
     const job = await this.prisma.job.findUnique({ where: { id: jobId } });
     if (!job) return;
+    if (job.status === "CANCELED") return; // não ressuscita job cancelado
 
     // Persiste os assets de saída ligados a este job.
     for (const out of parsed?.outputs ?? []) {
@@ -92,6 +95,8 @@ export class JobEventsService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async onFailed(jobId: string, reason: string): Promise<void> {
+    const existing = await this.prisma.job.findUnique({ where: { id: jobId } });
+    if (existing?.status === "CANCELED") return; // cancelado pelo usuário; ignora
     const job = await this.prisma.job.update({
       where: { id: jobId },
       data: { status: JobStatus.FAILED, error: reason, finishedAt: new Date() },

@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import {
   GenerationType,
   GpuBackend,
@@ -7,7 +12,7 @@ import {
   type CreateGenerationInput,
   type JobPayload,
 } from "@meshforge/shared-types";
-import { enqueue } from "@meshforge/queue";
+import { enqueue, removeJob } from "@meshforge/queue";
 import { PrismaService } from "../prisma.service.js";
 
 // Mapeia o tipo de geração para a etapa inicial. Fase 2 cobre 2D; 3D vem depois.
@@ -81,9 +86,52 @@ export class GenerationsService {
         ...input.params,
       },
     };
-    await enqueue(QUEUES.COMFYUI, payload);
+    // Enfileira; se falhar (Redis fora do ar), marca FAILED para não deixar
+    // geração órfã em QUEUED que nunca processa.
+    try {
+      await enqueue(QUEUES.COMFYUI, payload);
+    } catch (err) {
+      const reason = `Falha ao enfileirar: ${(err as Error).message}`;
+      await this.prisma.job.update({
+        where: { id: job.id },
+        data: { status: "FAILED", error: reason, finishedAt: new Date() },
+      });
+      await this.prisma.generation.update({
+        where: { id: generation.id },
+        data: { status: "FAILED" },
+      });
+      throw new ServiceUnavailableException(
+        "Não foi possível enfileirar a geração (fila indisponível). Tente novamente.",
+      );
+    }
 
     return generation;
+  }
+
+  async cancel(id: string) {
+    const generation = await this.prisma.generation.findUnique({
+      where: { id },
+      include: { jobs: true },
+    });
+    if (!generation) throw new NotFoundException(`Geração ${id} não encontrada`);
+
+    const job = generation.jobs[0];
+    if (job && (job.status === "QUEUED" || job.status === "RUNNING")) {
+      // Marca CANCELED primeiro (os handlers de evento respeitam esse estado).
+      await this.prisma.job.update({
+        where: { id: job.id },
+        data: { status: "CANCELED", finishedAt: new Date() },
+      });
+      // Tenta tirar da fila; se não conseguir, é porque já está em execução
+      // (concurrency=1 → é O job rodando) → interrompe a execução no ComfyUI.
+      const removed = await removeJob(QUEUES.COMFYUI, job.id).catch(() => false);
+      if (!removed) {
+        const url = process.env.COMFYUI_URL ?? "http://localhost:8188";
+        await fetch(`${url}/interrupt`, { method: "POST" }).catch(() => undefined);
+      }
+    }
+    await this.prisma.generation.update({ where: { id }, data: { status: "CANCELED" } });
+    return this.get(id);
   }
 
   async get(id: string) {
