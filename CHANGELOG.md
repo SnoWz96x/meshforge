@@ -4,6 +4,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### In progress — Textura na AMD (2 backends)
+- **Backend A (CPU) — rasterizador destravado**: o `custom_rasterizer` do Hunyuan3D
+  é uma extensão CUDA (não compila na AMD/ZLUDA). Descoberto que o `rasterizer.cpp`
+  já tem caminho de **CPU** e o dispatcher escolhe CPU/GPU pelo device do tensor.
+  Compilado um build **CPU-only** (MSVC, sem nvcc) — **validado** (rasterizou um
+  triângulo: 722 px). Fontes/patches versionados em `tools/custom-rasterizer-cpu/`.
+  Próximo: orquestrar o pipeline de textura (render multiview→pintura→bake) com
+  `device='cpu'` e um seletor `HUNYUAN3D_TEXTURE_BACKEND=cpu|gpu`.
+- **Backend B (GPU via ZLUDA)**: pendente — exige instalar o CUDA Toolkit 11.8
+  (`nvcc`) para compilar o `.cu` e deixar o ZLUDA traduzir os kernels em runtime
+  (experimental). Os dois backends coexistirão no mesmo pacote (seletor em runtime).
+
 ### Added — Texto→3D (pipeline encadeado)
 - **Texto → 3D (E2E)**: nova `GenerationType.TEXT_TO_3D` que encadeia, **numa
   geração só**, SDXL txt2img → Hunyuan3D shape. Um job (`JobStage.TEXT_TO_3D`,
