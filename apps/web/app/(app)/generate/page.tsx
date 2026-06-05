@@ -44,6 +44,7 @@ export default function GeneratePage() {
   const [steps, setSteps] = useState(20);
   const [cfg, setCfg] = useState(7);
   const [denoise, setDenoise] = useState(0.6);
+  const [texture, setTexture] = useState(false);
   const [input, setInput] = useState<Asset | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -61,7 +62,7 @@ export default function GeneratePage() {
           projectId,
           type: "IMAGE_TO_3D",
           inputAssetId: input!.id,
-          params: { steps },
+          params: { steps, texture },
         });
       }
       if (mode === "IMAGE_TO_IMAGE") {
@@ -80,7 +81,7 @@ export default function GeneratePage() {
           type: "TEXT_TO_3D",
           prompt,
           negativePrompt: negative,
-          params: { width: size.w, height: size.h, steps, cfg },
+          params: { width: size.w, height: size.h, steps, cfg, texture },
         });
       }
       return api.createGeneration({
@@ -161,6 +162,24 @@ export default function GeneratePage() {
               converte em <b>malha 3D</b> (.glb) — tudo numa geração só. Leva mais tempo (2
               modelos).
             </p>
+          )}
+          {(mode === "IMAGE_TO_3D" || mode === "TEXT_TO_3D") && (
+            <label className="-mt-1 flex cursor-pointer items-start gap-2.5 rounded-sm border border-border bg-surface-2 p-3">
+              <input
+                type="checkbox"
+                checked={texture}
+                onChange={(e) => setTexture(e.target.checked)}
+                className="mt-0.5 accent-accent"
+              />
+              <span className="text-[12px] leading-relaxed text-content-secondary">
+                <b className="text-content">Texturizar a malha</b>{" "}
+                <span className="rounded-sm bg-accent-soft px-1 text-[9px] font-semibold uppercase text-accent">
+                  beta
+                </span>
+                <br />
+                Pinta a cor PBR (Hunyuan3D paint) na sua AMD. Adiciona ~2 min e usa mais VRAM.
+              </span>
+            </label>
           )}
 
           {mode !== "IMAGE_TO_3D" && (

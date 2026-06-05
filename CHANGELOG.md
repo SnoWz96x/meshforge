@@ -20,7 +20,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 - **Backend B (GPU via ZLUDA)** — pendente: exige instalar o CUDA Toolkit 11.8
   (`nvcc`) para compilar o `.cu` e deixar o ZLUDA traduzir os kernels em runtime
   (experimental). Os dois backends coexistirão no mesmo pacote (seletor em runtime).
-- **Integração no produto** (worker stage + UI) — próximo passo.
+- **Integrado no produto (E2E)**: textura virou **opção** nas gerações 3D
+  (`params.texture`). Worker: helper `_texturize()` encadeia a textura após o shape
+  nos fluxos `HUNYUAN3D_SHAPE` e `TEXT_TO_3D` (defaults seguros p/ 16 GB: vistas 256,
+  render/textura 768). UI: checkbox **"Texturizar (beta)"** nos modos 3D. Validado
+  via produto: API `TEXT_TO_3D {texture:true}` → asset `MESH_RAW` (`meta.textured`)
+  com PBRMaterial + textura 768² salvo na biblioteca. Requer ComfyUI com o launcher
+  de textura (`HUNYUAN3D_TEXTURE_DEVICE=cpu`).
 
 ### Added — Texto→3D (pipeline encadeado)
 - **Texto → 3D (E2E)**: nova `GenerationType.TEXT_TO_3D` que encadeia, **numa

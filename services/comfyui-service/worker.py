@@ -91,13 +91,43 @@ def _save_mesh(project_id: str, src_glb: Path) -> tuple[str, int]:
     return f"local:{key}", path.stat().st_size
 
 
-def _newest_glb() -> Path:
+def _newest_glb(pattern: str = "*.glb") -> Path:
     """Pega o .glb mais recente do output do ComfyUI (concurrency=1 → seguro)."""
-    glbs = sorted((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb"),
+    glbs = sorted((COMFYUI_OUTPUT_DIR / "3D").glob(pattern),
                   key=lambda p: p.stat().st_mtime, reverse=True)
     if not glbs:
         raise RuntimeError("Nenhum .glb encontrado no output do ComfyUI")
     return glbs[0]
+
+
+# Defaults de textura ajustados para 16 GB de VRAM (vistas a 512² estouram a GPU).
+_TEXTURE_DEFAULTS = {"view_size": 256, "render_size": 768, "texture_size": 768, "texture_steps": 15}
+
+
+def _texturize(client, payload: dict, glb_path: Path, ref_name: str, params: dict,
+               prog_start: int, prog_end: int) -> tuple[str, int]:
+    """Texturiza um .glb (render/bake na CPU + pintura na GPU/ZLUDA).
+
+    Requer o ComfyUI iniciado com HUNYUAN3D_TEXTURE_DEVICE=cpu (launcher de textura).
+    Devolve (storageUri, sizeBytes) do .glb texturizado.
+    """
+    from hunyuan3d_texture import build_texture
+
+    tex_params = {**_TEXTURE_DEFAULTS, **params}
+    before = set((COMFYUI_OUTPUT_DIR / "3D").glob("MeshForgeTex*.glb"))
+    graph = build_texture(str(glb_path), ref_name, tex_params)
+    pid = client.submit(graph)
+    _publish_progress(payload, prog_start)
+    span = max(1, prog_end - prog_start)
+    client.wait(
+        pid,
+        on_progress=lambda p: _publish_progress(
+            payload, max(prog_start, min(prog_end - 1, prog_start + int(p * span / 100)))
+        ),
+    )
+    created = set((COMFYUI_OUTPUT_DIR / "3D").glob("MeshForgeTex*.glb")) - before
+    tex_glb = max(created, key=lambda p: p.stat().st_mtime) if created else _newest_glb("MeshForgeTex*.glb")
+    return _save_mesh(payload["projectId"], tex_glb)
 
 
 def run_job(payload: dict) -> dict:
@@ -121,14 +151,22 @@ def run_job(payload: dict) -> dict:
 
         # Etapa 2/2: usa a imagem gerada como entrada do shape (Hunyuan3D).
         input_name = client.upload_image(img, f"{uuid.uuid4().hex}.png")
+        want_tex = bool(params.get("texture"))
+        shape_cap = 70 if want_tex else 95
         graph3d = build_image_to_3d(input_name, params)
         before = set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb"))
         pid3d = client.submit(graph3d)
         _publish_progress(payload, 52)
-        client.wait(pid3d, on_progress=lambda p: _publish_progress(payload, max(52, min(95, 50 + int(p * 0.45)))))
+        client.wait(pid3d, on_progress=lambda p: _publish_progress(payload, max(52, min(shape_cap, 50 + int(p * 0.45)))))
         created = set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb")) - before
         glb = max(created, key=lambda p: p.stat().st_mtime) if created else _newest_glb()
-        mesh_uri, mesh_size = _save_mesh(payload["projectId"], glb)
+
+        if want_tex:
+            mesh_uri, mesh_size = _texturize(client, payload, glb, input_name, params, shape_cap + 1, 100)
+            mesh_meta = {"source": "hunyuan3d-2", "pipeline": "text-to-3d", "textured": True}
+        else:
+            mesh_uri, mesh_size = _save_mesh(payload["projectId"], glb)
+            mesh_meta = {"source": "hunyuan3d-2", "pipeline": "text-to-3d"}
         _publish_progress(payload, 100, status="SUCCEEDED")
         return {
             "jobId": payload["jobId"],
@@ -138,7 +176,7 @@ def run_job(payload: dict) -> dict:
                  "meta": {"width": params.get("width", 1024), "height": params.get("height", 1024),
                           "stage": "txt2img"}},
                 {"kind": "MESH_RAW", "format": "glb", "storageUri": mesh_uri, "sizeBytes": mesh_size,
-                 "meta": {"source": "hunyuan3d-2", "pipeline": "text-to-3d"}},
+                 "meta": mesh_meta},
             ],
         }
 
@@ -149,17 +187,26 @@ def run_job(payload: dict) -> dict:
         src_key = payload["inputs"][0].split("local:", 1)[-1]
         src_bytes = _storage_path(src_key).read_bytes()
         input_name = client.upload_image(src_bytes, f"{uuid.uuid4().hex}.png")
+        want_tex = bool(params.get("texture"))
+        shape_cap = 50 if want_tex else 95
         graph = build_image_to_3d(input_name, params)
         # Snapshot dos .glb existentes p/ identificar o novo (robusto vs mtime/corrida).
         before = set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb"))
         prompt_id = client.submit(graph)
         _publish_progress(payload, 10)
-        client.wait(prompt_id, on_progress=lambda p: _publish_progress(payload, max(10, min(95, p))))
+        client.wait(prompt_id, on_progress=lambda p: _publish_progress(payload, max(10, min(shape_cap, p))))
         created = sorted((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb")) and (
             set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb")) - before
         )
         glb = max(created, key=lambda p: p.stat().st_mtime) if created else _newest_glb()
-        uri, size = _save_mesh(payload["projectId"], glb)
+
+        if want_tex:
+            # Reaproveita a imagem de entrada como referência da textura.
+            uri, size = _texturize(client, payload, glb, input_name, params, shape_cap + 2, 100)
+            mesh_meta = {"source": "hunyuan3d-2", "textured": True}
+        else:
+            uri, size = _save_mesh(payload["projectId"], glb)
+            mesh_meta = {"source": "hunyuan3d-2"}
         _publish_progress(payload, 100, status="SUCCEEDED")
         return {
             "jobId": payload["jobId"],
@@ -169,7 +216,7 @@ def run_job(payload: dict) -> dict:
                 "format": "glb",
                 "storageUri": uri,
                 "sizeBytes": size,
-                "meta": {"source": "hunyuan3d-2"},
+                "meta": mesh_meta,
             }],
         }
 
