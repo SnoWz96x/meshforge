@@ -73,6 +73,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | Testes automatizados | ✅ | R3 — Vitest (16: storage + contratos zod) + pytest (8: workflow builders SDXL/Hunyuan3D). `pnpm test` / `pytest` |
 | ESLint + Prettier | ✅ | R3 — flat config typescript-eslint + Prettier (base formatada); `pnpm lint`/`format` limpos |
 | CI (GitHub Actions) | ✅ | R3 — `.github/workflows/ci.yml`: format/lint/typecheck/test (Node) + pytest (Python) em push/PR |
+| Otimização de armazenamento (modelos) | ✅ | R3 — removidos 3 `.ckpt` redundantes do Hunyuan3D dit (~14 GB); mantidas 2 variantes `.safetensors` (fp16/fp32) com switch `HUNYUAN3D_DIT_MODEL`. Validado com geração 3D real pós-limpeza |
 
 ## 5. Interface (UI premium) — **GRANDE LACUNA ATUAL**
 

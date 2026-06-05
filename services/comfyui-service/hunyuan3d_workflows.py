@@ -9,9 +9,15 @@ Textura nativa (custom_rasterizer) é CUDA-only → na AMD usaremos plano B
 """
 from __future__ import annotations
 
+import os
 from typing import Any
 
-DEFAULT_DIT = "model.fp16.safetensors"
+# Modelo de forma (shape). Mantemos 2 variantes em disco e alternamos por env:
+#   - model.fp16.safetensors  (padrão; metade da VRAM)
+#   - model.safetensors       (fp32; mais preciso, dobro do peso)
+# Trocar é só definir HUNYUAN3D_DIT_MODEL. Um `params["model"]` ainda sobrepõe
+# por requisição. (Os formatos .ckpt foram removidos — eram redundantes.)
+DEFAULT_DIT = os.environ.get("HUNYUAN3D_DIT_MODEL", "model.fp16.safetensors")
 
 
 def build_image_to_3d(image_name: str, params: dict[str, Any]) -> dict:

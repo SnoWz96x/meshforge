@@ -5,6 +5,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 ## [Unreleased]
 
 ### Fortalecimento (R3)
+- **Modelos Hunyuan3D enxutos (~14 GB recuperados)**: o repo da Tencent traz o
+  modelo de forma em 5 arquivos (mesmos pesos em fp16/fp32 × safetensors/.ckpt).
+  Removidos os 3 `.ckpt` (legado/pickle, redundantes). Mantidas as 2 variantes
+  `.safetensors` (fp16 padrão + fp32), com **switch por env** `HUNYUAN3D_DIT_MODEL`
+  (sem mexer no código). **Validado**: geração 3D real (novo `.glb`) após a limpeza.
 - **Supervisor do ComfyUI** (`tools/bootstrap/comfyui-supervisor.ps1`): mantém o
   runtime de GPU vivo. Health-check em `:8188/system_stats`; após N falhas
   consecutivas, mata zumbis (`zluda.exe`/`python main.py`) e religa pelo launcher

@@ -156,7 +156,29 @@ pnpm infra:down
 
 ---
 
-## 7. Logs e rastreabilidade
+## 7. Modelo de forma (shape) Hunyuan3D — fp16 vs fp32
+
+Mantemos **2 variantes** do modelo `dit` em
+`auxiliary-tools/models/hunyuan3d/hunyuan3d-dit-v2-0/`:
+
+| Arquivo | Precisão | Quando usar |
+| :-- | :-- | :-- |
+| `model.fp16.safetensors` | fp16 (**padrão**) | metade da VRAM; é o que usamos |
+| `model.safetensors` | fp32 | mais preciso, dobro do peso/VRAM |
+
+Para **alternar** (sem mexer no código), defina a env do worker antes de subi-lo:
+
+```powershell
+$env:HUNYUAN3D_DIT_MODEL="model.safetensors"   # usa fp32
+# (sem definir = model.fp16.safetensors, o padrão)
+```
+
+> Os formatos `.ckpt` (legado/pickle) foram removidos por serem redundantes —
+> usamos só `.safetensors`. Re-baixáveis pelo model-manager se um dia precisar.
+
+---
+
+## 8. Logs e rastreabilidade
 
 - **Worker**: logging estruturado com `job=<id> stage=<stage>` em cada transição
   (início / OK / FALHOU). `LOG_LEVEL=DEBUG` para mais detalhe.
