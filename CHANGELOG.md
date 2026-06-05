@@ -4,17 +4,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
-### In progress — Textura na AMD (2 backends)
-- **Backend A (CPU) — rasterizador destravado**: o `custom_rasterizer` do Hunyuan3D
-  é uma extensão CUDA (não compila na AMD/ZLUDA). Descoberto que o `rasterizer.cpp`
-  já tem caminho de **CPU** e o dispatcher escolhe CPU/GPU pelo device do tensor.
-  Compilado um build **CPU-only** (MSVC, sem nvcc) — **validado** (rasterizou um
-  triângulo: 722 px). Fontes/patches versionados em `tools/custom-rasterizer-cpu/`.
-  Próximo: orquestrar o pipeline de textura (render multiview→pintura→bake) com
-  `device='cpu'` e um seletor `HUNYUAN3D_TEXTURE_BACKEND=cpu|gpu`.
-- **Backend B (GPU via ZLUDA)**: pendente — exige instalar o CUDA Toolkit 11.8
+### Textura na AMD — Backend A (CPU) VALIDADO E2E 🏆
+- **Textura PBR do Hunyuan3D rodando na AMD/ZLUDA** — fim a fim. Pipeline:
+  `Hy3DLoadMesh → UVWrap → RenderMultiView (CPU) → SampleMultiView (pintura, GPU/ZLUDA)
+  → BakeFromMultiview (CPU) → ApplyTexture → ExportMesh`. **Validado**: malha gerada →
+  `.glb` texturizado com **PBRMaterial + textura 768×768 embutida + UVs** (~2min).
+  Builder versionado em `services/comfyui-service/hunyuan3d_texture.py`.
+- **Rasterizador destravado**: o `custom_rasterizer` é uma extensão CUDA (não compila
+  na AMD). Descoberto que o `rasterizer.cpp` já tem caminho de **CPU**; compilado um
+  build **CPU-only** (MSVC, sem nvcc) — render/bake na CPU (`tools/custom-rasterizer-cpu/`).
+  `MeshRender` aceita `HUNYUAN3D_TEXTURE_DEVICE=cpu|gpu`; launcher de textura em
+  `tools/bootstrap/comfyui-zluda-launch-texture.bat`.
+- Aprendizado: a 512² com 6 vistas a pintura estoura os 16 GB (OOM) — **não é falha do
+  ZLUDA**; com vistas a 256² roda. (Tamanhos serão expostos como parâmetro.)
+- **Backend B (GPU via ZLUDA)** — pendente: exige instalar o CUDA Toolkit 11.8
   (`nvcc`) para compilar o `.cu` e deixar o ZLUDA traduzir os kernels em runtime
   (experimental). Os dois backends coexistirão no mesmo pacote (seletor em runtime).
+- **Integração no produto** (worker stage + UI) — próximo passo.
 
 ### Added — Texto→3D (pipeline encadeado)
 - **Texto → 3D (E2E)**: nova `GenerationType.TEXT_TO_3D` que encadeia, **numa
