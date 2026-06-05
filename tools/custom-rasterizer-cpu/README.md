@@ -45,10 +45,23 @@ margem de segurança pra "de qualquer forma fazer funcionar".
    outra). Resultado: `custom_rasterizer_kernel.*.pyd` + pacote `custom_rasterizer`
    instalados no venv do ComfyUI.
 
+## Patch do device no renderer (necessário p/ usar a CPU)
+
+Os nós de render do wrapper criam `MeshRender(...)` sem `device` → default `'cuda'`.
+Para o Backend A usar a CPU, aplicamos um patch de 1 ponto em
+`hy3dgen/texgen/differentiable_renderer/mesh_render.py` (`MeshRender.__init__`):
+o default de `device` passa a vir do env **`HUNYUAN3D_TEXTURE_DEVICE`**
+(`cpu`|`cuda`, default `cuda` — preserva NVIDIA). Assim o seletor de backend só
+exporta a env e todo o render/bake roda na CPU (rasterizador deste build).
+
 ## Validação (feita)
 
 ```text
+# rasterizador cru:
 findices (64,64)  bary (64,64,3)  pixels_no_triangulo: 722  -> CPU RASTERIZE OK
+
+# MeshRender completo em CPU, malha real (20k verts / 40k faces):
+normal (256,256,3)  mask_px 21710  pos (256,256,3)  tempo 0.1s -> CPU RENDER OK
 ```
 
 ## Notas duramente aprendidas
