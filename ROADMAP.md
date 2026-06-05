@@ -18,7 +18,18 @@ Estado real por fase. Datas relativas; foco em "pronto quando validado", sem pla
 > **Decisão tomada (2026-06-04):** produto **Híbrido** — Next.js web-first +
 > shell Tauri depois. Identidade/UX em [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
 
-## Próximos candidatos imediatos
+## 🔧 Foco ATUAL: Refinamento (estabilizar antes de novas features)
+
+Decisão (2026-06-04): antes de novas funcionalidades, **estabilizar/polir/fortalecer**
+a base. Detalhes e priorização em **[AUDIT.md](AUDIT.md)**.
+
+| Etapa | Conteúdo | Status |
+| :-- | :-- | :-- |
+| **R1 — Estabilização** | error boundary, geração atômica, glb por history, supervisão ComfyUI, health profundo, validação de env, cancelamento | ⬜ |
+| **R2 — Polimento** | viewer 3D profissional, biblioteca com malhas+thumbnails, WebSocket de progresso, toasts, CRUD projetos | ⬜ |
+| **R3 — Fortalecimento** | ESLint/Prettier/CI, testes, logger estruturado, métricas, RUNBOOK, conformance checker, otimização de disco/thumbnails | ⬜ |
+
+## Próximos candidatos imediatos (após refino)
 1. **Fase 7 (UI)** — front-end premium (depende da decisão Web/Desktop/Híbrido).
 2. **Fase 3 (3D)** — Hunyuan3D na GPU.
 3. **Fase 2.1** — validar img2img.

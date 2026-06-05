@@ -4,6 +4,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Audit
+- **AUDIT.md**: auditoria completa fundamentada no código (bugs, arquitetura,
+  performance, UX, deps mortas, fluxos incompletos) + roadmap de refinamento
+  (R1 estabilização → R2 polimento → R3 fortalecimento). Foco antes de novas features.
+- Corrigido drift de docs (README: `packages/ui`/serviços inexistentes).
+
 ### Added
 - **Governança:** `REQUIREMENTS_TRACKING.md`, `ROADMAP.md`, `CHANGELOG.md`,
   `CONFORMANCE_CHECKLIST.md`, `FUTURE_AUTOMATION_ROADMAP.md`.

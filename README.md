@@ -171,13 +171,16 @@ so the same pipeline runs on **AMD (ZLUDA / ROCm)** or **NVIDIA (CUDA)**.
 ```
 meshforge/
 ├── apps/             web (Next.js) · api (NestJS)
-├── services/         comfyui · hunyuan3d · blender · pipeline-orchestrator
-├── packages/         shared-types · db (Prisma) · queue · ui
+├── services/         comfyui-service (Python worker: SDXL + Hunyuan3D)
+│                     # blender-worker, pipeline-orchestrator: planejados (Fases 4–5)
+├── packages/         shared-types · db (Prisma) · queue · storage
 ├── tools/            bootstrap · tool-manager · model-manager
-├── infra/            docker-compose, Dockerfiles
+├── infra/            docker-compose
 ├── auxiliary-tools/  ComfyUI / Hunyuan3D / Blender  (managed, git-ignored)
 └── assets/           brand assets
 ```
+
+> Estado real e auditoria: [AUDIT.md](AUDIT.md) · [REQUIREMENTS_TRACKING.md](REQUIREMENTS_TRACKING.md)
 
 ## Roadmap
 

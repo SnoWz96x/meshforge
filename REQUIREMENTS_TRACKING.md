@@ -6,6 +6,9 @@ funcional algo que não esteja realmente implementado e validado.**
 
 **Legenda:** ✅ feito & validado · 🚧 em desenvolvimento/parcial · ⬜ pendente · 🧪 código pronto, não validado E2E
 
+> 🔍 **Auditoria completa em [AUDIT.md](AUDIT.md)** — foco atual é o roadmap de
+> refinamento (R1 estabilização → R2 polimento → R3 fortalecimento) antes de novas features.
+
 Última atualização: 2026-06-04
 
 ---
