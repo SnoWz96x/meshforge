@@ -5,6 +5,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 ## [Unreleased]
 
 ### Polish (R2)
+- **Biblioteca com malhas 3D**: thumbnails 3D leves (montam só quando visíveis,
+  IntersectionObserver) + **lightbox** que abre o viewer 3D completo / imagem.
+- **A11y do ⌘K**: removido o Radix Dialog (warning de DialogTitle); overlay próprio + Escape.
 - **Viewer 3D profissional** (`MeshViewer`): toolbar flutuante (materiais studio/normais/
   argila, wireframe, grade, reset de câmera, tela cheia) + painel de stats (verts/faces).
   **Validado pelo usuário** (bule → malha 20k verts / 40k faces renderizada no navegador).

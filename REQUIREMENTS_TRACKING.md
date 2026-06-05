@@ -74,10 +74,10 @@ funcional algo que não esteja realmente implementado e validado.**
 | Front-end premium — **Milestone 1** | ✅ | `apps/web` (Next.js): shell premium + tokens "forge heat", validado E2E no navegador (gerou imagem 1024px real) |
 | Dark mode / Light mode | ✅ | next-themes, tokens dark-first + light; toggle funcional |
 | Área de geração (text2img) | ✅ | Tela "Gerar" 2 painéis → cria geração real → progresso → imagem + download |
-| Galeria / biblioteca (imagens) | ✅ | `/library` lista assets reais do banco; `/projects` lista projetos reais |
+| Galeria / biblioteca (imagens **e malhas 3D**) | ✅ | `/library` mostra imagens + **malhas 3D** (thumbnail 3D leve via IntersectionObserver) + **lightbox** (abre o viewer 3D completo / imagem). `/projects` lista projetos. *(validação visual pelo usuário recomendada)* |
 | Áreas Workflow / Exportar (na UI) | 🚧 | Telas presentes mas **honestamente marcadas "em desenvolvimento"** (Fase 5/6) — NÃO fingem funcionar |
 | Visualização 3D em tempo real | ✅ | Viewer `MeshViewer` (r3f) com **toolbar pro** (wireframe, materiais studio/normais/argila, grade, reset, tela cheia) + stats verts/faces + grade. **Validado visualmente pelo usuário** (bule → malha renderizada, 20k verts/40k faces). |
-| A11y do command palette (cmdk) | ⬜ | Warning Radix "DialogContent requires DialogTitle" — adicionar título oculto (R3) |
+| A11y do command palette (cmdk) | ✅ | Trocado Command.Dialog por overlay próprio + `Command` (sem Radix Dialog) → sem warning; Escape fecha |
 | Drag & drop (upload img2img) | ✅ | Dropzone na tela Gerar; upload real → modo Imagem→Imagem |
 | Command palette (⌘K) | ✅ | cmdk: navegação + alternar tema (validado no navegador) |
 
