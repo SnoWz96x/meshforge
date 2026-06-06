@@ -14,21 +14,50 @@ async function ensureProject(): Promise<string> {
   return (await api.createProject("Meu primeiro projeto")).id;
 }
 
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+        active
+          ? "border-accent bg-accent-soft text-content"
+          : "border-border bg-surface-2 text-content-secondary hover:text-content",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function GalleryPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
+  const [source, setSource] = useState<string>("");
   const [imported, setImported] = useState<Set<string>>(new Set());
 
+  const { data: sources } = useQuery({
+    queryKey: ["gallery-sources"],
+    queryFn: api.gallerySources,
+  });
   const { data: models, isLoading } = useQuery({
-    queryKey: ["gallery", query],
-    queryFn: () => api.galleryList(query || undefined, 90),
+    queryKey: ["gallery", query, source],
+    queryFn: () => api.galleryList(query || undefined, 90, source || undefined),
   });
 
   const importer = useMutation({
     mutationFn: async (m: GalleryModel) => {
       const projectId = await ensureProject();
-      return api.galleryImport(projectId, m.url, m.name);
+      return api.galleryImport(projectId, m);
     },
     onSuccess: (_a, m) => {
       setImported((s) => new Set(s).add(m.id));
@@ -45,8 +74,9 @@ export default function GalleryPage() {
       <div className="min-h-0 flex-1 overflow-y-auto p-6">
         <div className="mb-5 flex flex-col gap-2">
           <p className="text-[12px] text-content-secondary">
-            Modelos 3D <b className="text-content">open-source (CC0)</b> para importar e usar —
-            depois é só texturizar, otimizar ou exportar como qualquer malha sua.
+            <b className="text-content">1.500+ modelos 3D open-source</b> (CC0 / CC-BY) de várias
+            fontes para importar — depois é só texturizar, otimizar ou exportar como qualquer malha
+            sua.
           </p>
           <form
             onSubmit={(e) => {
@@ -66,6 +96,16 @@ export default function GalleryPage() {
               Buscar
             </button>
           </form>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Chip active={source === ""} onClick={() => setSource("")}>
+              Todas
+            </Chip>
+            {sources?.map((s) => (
+              <Chip key={s.id} active={source === s.id} onClick={() => setSource(s.id)}>
+                {s.label} <span className="text-content-muted">{s.count}</span>
+              </Chip>
+            ))}
+          </div>
         </div>
 
         {isLoading ? (

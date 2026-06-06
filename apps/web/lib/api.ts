@@ -84,14 +84,17 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ op, targetFaces }),
     }),
-  galleryList: (search?: string, limit = 60) =>
+  galleryList: (search?: string, limit = 60, source?: string) =>
     req<GalleryModel[]>(
-      `/gallery?limit=${limit}${search ? `&search=${encodeURIComponent(search)}` : ""}`,
+      `/gallery?limit=${limit}${search ? `&search=${encodeURIComponent(search)}` : ""}${
+        source ? `&source=${source}` : ""
+      }`,
     ),
-  galleryImport: (projectId: string, url: string, name: string) =>
+  gallerySources: () => req<GallerySource[]>("/gallery/sources"),
+  galleryImport: (projectId: string, m: GalleryModel) =>
     req<Asset>("/gallery/import", {
       method: "POST",
-      body: JSON.stringify({ projectId, url, name }),
+      body: JSON.stringify({ projectId, source: m.source, url: m.url, name: m.name }),
     }),
 };
 
@@ -103,6 +106,13 @@ export interface GalleryModel {
   license: string;
   creator: string;
   collection: string;
+  source: "cc0" | "khronos" | "polyhaven";
+}
+
+export interface GallerySource {
+  id: string;
+  label: string;
+  count: number;
 }
 
 // Upload multipart (não usa o helper req(): o browser define o boundary).

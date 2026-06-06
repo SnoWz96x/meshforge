@@ -6,12 +6,26 @@ export class GalleryController {
   constructor(private readonly gallery: GalleryService) {}
 
   @Get()
-  list(@Query("search") search?: string, @Query("limit") limit?: string) {
-    return this.gallery.list(search, limit ? Number(limit) : 60);
+  list(
+    @Query("search") search?: string,
+    @Query("limit") limit?: string,
+    @Query("source") source?: string,
+  ) {
+    return this.gallery.list(search, limit ? Number(limit) : 60, source);
+  }
+
+  @Get("sources")
+  sources() {
+    return this.gallery.sources();
   }
 
   @Post("import")
-  import(@Body() body: { projectId?: string; url?: string; name?: string }) {
-    return this.gallery.import(body?.projectId ?? "", body?.url ?? "", body?.name ?? "modelo");
+  import(@Body() body: { projectId?: string; source?: string; url?: string; name?: string }) {
+    return this.gallery.import(
+      body?.projectId ?? "",
+      body?.source ?? "cc0",
+      body?.url ?? "",
+      body?.name ?? "modelo",
+    );
   }
 }
