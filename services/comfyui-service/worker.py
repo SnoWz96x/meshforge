@@ -130,6 +130,35 @@ def _texturize(client, payload: dict, glb_path: Path, ref_name: str, params: dic
     return _save_mesh(payload["projectId"], tex_glb)
 
 
+_rembg_session = None
+
+
+def _remove_bg(data: bytes) -> bytes:
+    """Recorta o objeto sobre fundo branco (rembg/u2net).
+
+    Passo crítico de QUALIDADE: o Hunyuan3D espera o objeto isolado. Com o fundo
+    da cena, o shape degenera (vira um bloco/cubo). Recortar o sujeito conserta a
+    forma e melhora a textura. Se o rembg falhar, cai para a imagem original.
+    """
+    global _rembg_session
+    try:
+        import io
+
+        from PIL import Image
+        from rembg import new_session, remove
+
+        if _rembg_session is None:
+            _rembg_session = new_session("u2net")
+        img = Image.open(io.BytesIO(data)).convert("RGBA")
+        out = remove(img, session=_rembg_session, bgcolor=(255, 255, 255, 255)).convert("RGB")
+        buf = io.BytesIO()
+        out.save(buf, format="PNG")
+        return buf.getvalue()
+    except Exception as err:  # noqa: BLE001
+        log(logging.WARNING, None, None, f"rembg falhou ({err!r}); usando imagem original")
+        return data
+
+
 def run_job(payload: dict) -> dict:
     """Trabalho bloqueante (roda em thread). Devolve um JobResult."""
     client = ComfyUIClient(COMFYUI_URL)
@@ -149,8 +178,9 @@ def run_job(payload: dict) -> dict:
         img_uri, img_size = _save_image(payload["projectId"], img)
         _publish_progress(payload, 48)
 
-        # Etapa 2/2: usa a imagem gerada como entrada do shape (Hunyuan3D).
-        input_name = client.upload_image(img, f"{uuid.uuid4().hex}.png")
+        # Etapa 2/2: recorta o fundo (qualidade!) e usa como entrada do shape.
+        shape_img = _remove_bg(img) if params.get("remove_bg", True) else img
+        input_name = client.upload_image(shape_img, f"{uuid.uuid4().hex}.png")
         want_tex = bool(params.get("texture"))
         shape_cap = 70 if want_tex else 95
         graph3d = build_image_to_3d(input_name, params)
@@ -186,7 +216,9 @@ def run_job(payload: dict) -> dict:
             raise ValueError("image→3D sem imagem de entrada")
         src_key = payload["inputs"][0].split("local:", 1)[-1]
         src_bytes = _storage_path(src_key).read_bytes()
-        input_name = client.upload_image(src_bytes, f"{uuid.uuid4().hex}.png")
+        # Recorta o fundo (qualidade!) antes do shape.
+        shape_img = _remove_bg(src_bytes) if params.get("remove_bg", True) else src_bytes
+        input_name = client.upload_image(shape_img, f"{uuid.uuid4().hex}.png")
         want_tex = bool(params.get("texture"))
         shape_cap = 50 if want_tex else 95
         graph = build_image_to_3d(input_name, params)

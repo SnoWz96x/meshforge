@@ -3,3 +3,7 @@ redis>=5.0.0
 requests>=2.31.0
 websocket-client>=1.7.0
 pip-system-certs>=4.0; platform_system == "Windows"
+# Remoção de fundo antes do shape 3D (qualidade — evita o "cubo").
+rembg>=2.0.60
+onnxruntime>=1.18
+pillow>=10.0

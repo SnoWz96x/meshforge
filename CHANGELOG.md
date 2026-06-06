@@ -4,6 +4,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Qualidade 3D (shape + viewer)
+- **Shape muito melhor — remoção de fundo antes do 3D**: o Hunyuan3D espera o objeto
+  isolado; com o fundo da cena o shape degenerava num **cubo/bloco**. Agora o worker
+  recorta o objeto (rembg/u2net, fundo branco) antes do shape em todos os fluxos 3D
+  (`IMAGE_TO_3D` e `TEXT_TO_3D`); `params.remove_bg` (default on). **Validado**: o mesmo
+  prompt que dava cubo passou a gerar a forma correta (cogumelo). Fallback p/ imagem
+  original se o rembg falhar.
+- **Viewer mostra a textura**: novo modo **"Original"** (default) usa o material PBR
+  do próprio GLB → exibe a textura baked (antes o viewer sobrescrevia tudo com argila).
+  Fix de bug: `MeshThumb` mutava materiais na **cena compartilhada** do `useGLTF`
+  (apagava a textura p/ o viewer) → passa a **clonar antes de mutar**. Câmera: malhas
+  normalizadas para ~1.6u (antes objetos ~2u enchiam o frame).
+
 ### Textura na AMD — Backend A (CPU) VALIDADO E2E 🏆
 - **Textura PBR do Hunyuan3D rodando na AMD/ZLUDA** — fim a fim. Pipeline:
   `Hy3DLoadMesh → UVWrap → RenderMultiView (CPU) → SampleMultiView (pintura, GPU/ZLUDA)

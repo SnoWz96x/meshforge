@@ -15,12 +15,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type MaterialMode = "studio" | "normal" | "clay";
+type MaterialMode = "textured" | "studio" | "normal" | "clay";
 const MATERIAL_LABEL: Record<MaterialMode, string> = {
+  textured: "Original",
   studio: "Studio",
   normal: "Normais",
   clay: "Argila",
 };
+// "textured" mantém o material do próprio GLB (mostra a textura PBR baked).
+const MATERIAL_CYCLE: MaterialMode[] = ["textured", "studio", "normal", "clay"];
 
 function makeMaterial(mode: MaterialMode, wireframe: boolean): THREE.Material {
   if (mode === "normal") return new THREE.MeshNormalMaterial({ wireframe });
@@ -57,10 +60,31 @@ function Model({
 }) {
   const { scene } = useGLTF(url);
 
+  // Clona a cena (useGLTF é cacheado) e normaliza a escala para ~1.6 unidades,
+  // para a câmera fixa enquadrar bem qualquer malha (antes objetos ~2u enchiam o frame).
+  const model = useMemo(() => {
+    const root = scene.clone(true);
+    const box = new THREE.Box3().setFromObject(root);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    root.scale.multiplyScalar(1.6 / maxDim);
+    return root;
+  }, [scene]);
+
+  // Materiais originais do GLB (modo "Original" = textura PBR baked).
+  const originals = useMemo(() => {
+    const map = new Map<string, THREE.Material | THREE.Material[]>();
+    model.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh) map.set(m.uuid, m.material);
+    });
+    return map;
+  }, [model]);
+
   useEffect(() => {
     let vertices = 0;
     let faces = 0;
-    scene.traverse((o) => {
+    model.traverse((o) => {
       const m = o as THREE.Mesh;
       if (m.isMesh && m.geometry) {
         const pos = m.geometry.attributes.position?.count ?? 0;
@@ -69,25 +93,37 @@ function Model({
       }
     });
     onStats({ vertices, faces: Math.round(faces) });
-  }, [scene, onStats]);
+  }, [model, onStats]);
 
   useMemo(() => {
-    const mat = makeMaterial(material, wireframe);
-    scene.traverse((o) => {
+    model.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (m.isMesh) m.material = mat;
+      if (!m.isMesh) return;
+      if (material === "textured") {
+        const orig = originals.get(m.uuid);
+        if (orig) {
+          const withWire = (mt: THREE.Material) => {
+            const c = wireframe ? mt.clone() : mt;
+            (c as THREE.MeshStandardMaterial).wireframe = wireframe;
+            return c;
+          };
+          m.material = Array.isArray(orig) ? orig.map(withWire) : withWire(orig);
+        }
+      } else {
+        m.material = makeMaterial(material, wireframe);
+      }
     });
-  }, [scene, material, wireframe]);
+  }, [model, material, wireframe, originals]);
 
   return (
     <Center>
-      <primitive object={scene} />
+      <primitive object={model} />
     </Center>
   );
 }
 
 export function MeshViewer({ url }: { url: string }) {
-  const [material, setMaterial] = useState<MaterialMode>("studio");
+  const [material, setMaterial] = useState<MaterialMode>("textured");
   const [wireframe, setWireframe] = useState(false);
   const [grid, setGrid] = useState(true);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -141,7 +177,9 @@ export function MeshViewer({ url }: { url: string }) {
       <div className="absolute left-1/2 top-3 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-border bg-surface-overlay/90 p-1 backdrop-blur">
         <ToolBtn
           onClick={() =>
-            setMaterial((m) => (m === "studio" ? "normal" : m === "normal" ? "clay" : "studio"))
+            setMaterial(
+              (m) => MATERIAL_CYCLE[(MATERIAL_CYCLE.indexOf(m) + 1) % MATERIAL_CYCLE.length],
+            )
           }
           title={`Material: ${MATERIAL_LABEL[material]}`}
         >

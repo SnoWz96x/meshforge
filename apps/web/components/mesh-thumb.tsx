@@ -8,8 +8,11 @@ import { Box } from "lucide-react";
 
 function ThumbModel({ url }: { url: string }) {
   const { scene } = useGLTF(url);
-  useMemo(() => {
-    scene.traverse((o) => {
+  // Clona ANTES de trocar o material: a cena do useGLTF é compartilhada (cache),
+  // e mutar direto apagaria a textura para o viewer completo (modo "Original").
+  const model = useMemo(() => {
+    const root = scene.clone(true);
+    root.traverse((o) => {
       const m = o as THREE.Mesh;
       if (m.isMesh)
         m.material = new THREE.MeshStandardMaterial({
@@ -18,10 +21,11 @@ function ThumbModel({ url }: { url: string }) {
           metalness: 0.05,
         });
     });
+    return root;
   }, [scene]);
   return (
     <Center>
-      <primitive object={scene} />
+      <primitive object={model} />
     </Center>
   );
 }
