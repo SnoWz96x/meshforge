@@ -11,7 +11,7 @@ const NAV = [
   { href: "/projects", label: "Projetos", icon: FolderKanban },
   { href: "/library", label: "Biblioteca", icon: Images },
   { href: "/workflow", label: "Workflow", icon: Workflow, soon: true },
-  { href: "/export", label: "Exportar", icon: Package, soon: true },
+  { href: "/export", label: "Exportar", icon: Package },
 ];
 
 export function Sidebar() {

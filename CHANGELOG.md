@@ -4,6 +4,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Added — Exportação multi-formato (Blender headless)
+- **Exporte os modelos 3D em GLB / GLTF / OBJ / FBX / STL / USDZ / PLY** — requisito
+  central, agora real. Usa **Blender 4.2 headless** (`services/blender-service/export_mesh.py`)
+  como conversor universal, preservando geometria, UV e **textura**. Formatos
+  multi-arquivo (OBJ/GLTF, com sidecars) são empacotados em `.zip`.
+- API: `POST /assets/:id/export {format}` → roda o Blender → cria um asset `EXPORT` →
+  devolve. Caminho do Blender por env `BLENDER_PATH`. **Validado E2E** (FBX/OBJ→zip/STL/USDZ).
+- UI: tela **Exportar** real (antes era stub) — grade de malhas → escolha do formato →
+  converte e baixa. Item de menu deixa de ser "em breve".
+
 ### Seletor de motor de textura (plug & play, por geração)
 - **Popup "Motor de textura" na tela Gerar**: botão que abre um popup com os 2
   backends de rasterização — **CPU (recomendado)** e **GPU (experimental)** — com

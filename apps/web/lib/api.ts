@@ -77,6 +77,8 @@ export const api = {
   getGeneration: (id: string) => req<Generation>(`/generations/${id}`),
   cancelGeneration: (id: string) =>
     req<Generation>(`/generations/${id}/cancel`, { method: "POST" }),
+  exportAsset: (id: string, format: string) =>
+    req<Asset>(`/assets/${id}/export`, { method: "POST", body: JSON.stringify({ format }) }),
 };
 
 // Upload multipart (não usa o helper req(): o browser define o boundary).

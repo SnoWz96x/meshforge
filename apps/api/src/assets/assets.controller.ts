@@ -1,4 +1,13 @@
-import { Controller, Get, Param, Post, Res, UploadedFile, UseInterceptors } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Res,
+  UploadedFile,
+  UseInterceptors,
+} from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import { AssetsService } from "./assets.service.js";
@@ -19,6 +28,11 @@ export class AssetsController {
   async upload(@Param("projectId") projectId: string, @UploadedFile() file: UploadedImage) {
     const ext = file.originalname.split(".").pop() ?? "png";
     return this.assets.uploadImage(projectId, file.buffer, ext);
+  }
+
+  @Post("assets/:id/export")
+  async export(@Param("id") id: string, @Body() body: { format?: string }) {
+    return this.assets.export(id, body?.format ?? "");
   }
 
   @Get("assets/:id")
