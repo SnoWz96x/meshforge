@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Textura — Backend B (rasterizador na GPU via ZLUDA)
+- **2ª frente de textura: kernels CUDA do `custom_rasterizer` rodando na AMD via
+  ZLUDA.** Compilado o `rasterizer_gpu.cu` (com `thrust`) com o nvcc (CUDA Toolkit
+  11.8), no MESMO pacote do build CPU → os dois backends coexistem; o dispatcher
+  escolhe CPU/GPU pelo device do tensor. Seletor em runtime `HUNYUAN3D_TEXTURE_DEVICE`
+  (`cpu`|`cuda`); launcher GPU em `tools/bootstrap/comfyui-zluda-launch-texture-gpu.bat`.
+  Build/patches versionados em `tools/custom-rasterizer-gpu/`.
+- **Validado**: rasterização GPU via ZLUDA dá o mesmo resultado da CPU (722 px) e o
+  pipeline de textura completo roda em `device=cuda`.
+- **Avaliação honesta**: o Backend B é **mais lento** que o A (~373s vs ~119s numa
+  textura leve) — o overhead do ZLUDA nos kernels custom (+ JIT) supera o ganho, pois
+  a rasterização **não é o gargalo** (a difusão é). Por isso o **Backend A (CPU)
+  segue como padrão**; o B fica como opção/robustez (a "2ª frente" pedida). Backend A
+  intacto (sem regressão — backup em `_mf_rasterizer_cpu_backup`).
+
 ### Refino de fidelidade 3D (níveis + upscale)
 - **Níveis de qualidade** `params.quality` = balanced/high/max (UI: "Qualidade 3D",
   default Alta): escalam geometria (octree 256→384, max_facenum 40k→160k, passos) e
