@@ -2,7 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Loader2, ImageOff, Wand2, Box, Boxes, Type, UploadCloud, X } from "lucide-react";
+import {
+  Sparkles,
+  Loader2,
+  ImageOff,
+  Wand2,
+  Box,
+  Boxes,
+  Type,
+  UploadCloud,
+  X,
+  Cpu,
+  ChevronRight,
+  Check,
+} from "lucide-react";
 import { Topbar } from "@/components/shell/topbar";
 import { MeshViewer } from "@/components/mesh-viewer";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -45,6 +58,8 @@ export default function GeneratePage() {
   const [cfg, setCfg] = useState(7);
   const [denoise, setDenoise] = useState(0.6);
   const [texture, setTexture] = useState(false);
+  const [textureBackend, setTextureBackend] = useState<"cpu" | "gpu">("cpu");
+  const [showEngine, setShowEngine] = useState(false);
   const [quality, setQuality] = useState<"balanced" | "high" | "max">("high");
   const [input, setInput] = useState<Asset | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -63,7 +78,7 @@ export default function GeneratePage() {
           projectId,
           type: "IMAGE_TO_3D",
           inputAssetId: input!.id,
-          params: { steps, texture, quality },
+          params: { steps, texture, quality, texture_backend: textureBackend },
         });
       }
       if (mode === "IMAGE_TO_IMAGE") {
@@ -82,7 +97,15 @@ export default function GeneratePage() {
           type: "TEXT_TO_3D",
           prompt,
           negativePrompt: negative,
-          params: { width: size.w, height: size.h, steps, cfg, texture, quality },
+          params: {
+            width: size.w,
+            height: size.h,
+            steps,
+            cfg,
+            texture,
+            quality,
+            texture_backend: textureBackend,
+          },
         });
       }
       return api.createGeneration({
@@ -209,6 +232,21 @@ export default function GeneratePage() {
               </span>
             </label>
           )}
+          {texture && (mode === "IMAGE_TO_3D" || mode === "TEXT_TO_3D") && (
+            <button
+              onClick={() => setShowEngine(true)}
+              className="-mt-2 flex items-center justify-between rounded-sm border border-border bg-surface-2 px-3 py-2 text-left transition-colors hover:border-accent"
+            >
+              <span className="flex items-center gap-2 text-[12px] text-content-secondary">
+                <Cpu size={14} className="text-accent" />
+                Motor de textura
+              </span>
+              <span className="flex items-center gap-1 text-[11px] font-medium text-content">
+                {textureBackend === "cpu" ? "CPU (recomendado)" : "GPU (experimental)"}
+                <ChevronRight size={13} className="text-content-muted" />
+              </span>
+            </button>
+          )}
 
           {mode !== "IMAGE_TO_3D" && (
             <>
@@ -309,7 +347,111 @@ export default function GeneratePage() {
           error={gen.error?.message || upload.error?.message}
         />
       </div>
+
+      {showEngine && (
+        <EnginePopup
+          current={textureBackend}
+          onPick={(b) => {
+            setTextureBackend(b);
+            setShowEngine(false);
+          }}
+          onClose={() => setShowEngine(false)}
+        />
+      )}
     </>
+  );
+}
+
+const ENGINES = [
+  {
+    id: "cpu" as const,
+    name: "CPU",
+    badge: "Recomendado",
+    desc: "Rasterização na CPU (custom_rasterizer compilado) + pintura na GPU via ZLUDA. Estável e mais rápido — a rasterização não é o gargalo.",
+  },
+  {
+    id: "gpu" as const,
+    name: "GPU",
+    badge: "Experimental",
+    desc: "Rasterização nos kernels CUDA na GPU via ZLUDA. Funciona, mas ~3× mais lento aqui (overhead do ZLUDA). Use só para comparar.",
+  },
+];
+
+function EnginePopup({
+  current,
+  onPick,
+  onClose,
+}: {
+  current: "cpu" | "gpu";
+  onPick: (b: "cpu" | "gpu") => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md overflow-hidden rounded-lg border border-border bg-surface-1"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <span className="flex items-center gap-2 text-[13px] font-semibold text-content">
+            <Cpu size={15} className="text-accent" />
+            Motor de textura (rasterização)
+          </span>
+          <button
+            onClick={onClose}
+            className="grid h-7 w-7 place-items-center rounded-sm text-content-muted hover:bg-surface-2 hover:text-content"
+            aria-label="Fechar"
+          >
+            <X size={15} />
+          </button>
+        </div>
+        <div className="flex flex-col gap-2 p-3">
+          {ENGINES.map((e) => (
+            <button
+              key={e.id}
+              onClick={() => onPick(e.id)}
+              className={cn(
+                "flex items-start gap-3 rounded-sm border p-3 text-left transition-colors",
+                current === e.id
+                  ? "border-accent bg-accent-soft"
+                  : "border-border bg-surface-2 hover:border-border-strong",
+              )}
+            >
+              <div
+                className={cn(
+                  "mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border",
+                  current === e.id ? "border-accent bg-accent text-white" : "border-border-strong",
+                )}
+              >
+                {current === e.id && <Check size={11} />}
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-semibold text-content">{e.name}</span>
+                  <span
+                    className={cn(
+                      "rounded-sm px-1.5 py-0.5 text-[9px] font-semibold uppercase",
+                      e.id === "cpu"
+                        ? "bg-accent-soft text-accent"
+                        : "bg-surface-overlay text-content-muted",
+                    )}
+                  >
+                    {e.badge}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-content-secondary">{e.desc}</p>
+              </div>
+            </button>
+          ))}
+          <p className="px-1 pt-1 text-[10px] leading-relaxed text-content-muted">
+            Os dois rodam na sua AMD via ZLUDA. A escolha vale por geração — sem reiniciar nada.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 

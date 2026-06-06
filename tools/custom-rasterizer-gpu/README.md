@@ -29,7 +29,21 @@ cuda disponivel: True
 GPU pixels: 722  device: cuda:0   -> BACKEND B OK   # kernels CUDA via ZLUDA
 ```
 
-## Selecionar o backend em runtime
+## Seleção POR GERAÇÃO (sem reiniciar) — plug & play
+
+Como o `.pyd` completo tem CPU **e** GPU, o mesmo ComfyUI roda os dois. Patch no nó
+`Hy3DRenderMultiView` (nodes.py) adiciona o input opcional **`render_device`**
+(`cpu`|`cuda`, default `cpu`), repassado ao `MeshRender(device=...)`. Assim o
+`build_texture` escolhe o backend por grafo (a partir de `params.texture_backend`),
+e a UI tem um **popup "Motor de textura"** na tela Gerar. Não precisa reiniciar o
+ComfyUI nem trocar de launcher.
+
+Patch (versionado aqui como referência; aplicar em
+`custom_nodes/ComfyUI-Hunyuan3DWrapper/nodes.py`, classe `Hy3DRenderMultiView`):
+- `INPUT_TYPES.optional` += `"render_device": (["cpu","cuda"], {"default":"cpu"})`
+- `process(..., render_device="cpu")` e `MeshRender(..., device=render_device)`
+
+## Selecionar o backend no LAUNCH (alternativa global)
 - **A (CPU, padrão)**: ComfyUI com `HUNYUAN3D_TEXTURE_DEVICE=cpu`
   (`tools/bootstrap/comfyui-zluda-launch-texture.bat`).
 - **B (GPU/ZLUDA)**: ComfyUI com `HUNYUAN3D_TEXTURE_DEVICE=cuda`

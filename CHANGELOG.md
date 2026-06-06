@@ -4,6 +4,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Seletor de motor de textura (plug & play, por geração)
+- **Popup "Motor de textura" na tela Gerar**: botão que abre um popup com os 2
+  backends de rasterização — **CPU (recomendado)** e **GPU (experimental)** — com
+  descrição e recomendação. A escolha vale **por geração, sem reiniciar** nada.
+- Como o `.pyd` completo tem CPU+GPU, o mesmo ComfyUI roda os dois: patch no nó
+  `Hy3DRenderMultiView` (input opcional `render_device` cpu|cuda → `MeshRender(device)`);
+  `build_texture` passa o device a partir de `params.texture_backend`. Validado E2E
+  (grafo com `render_device=cpu`, textura gerada). Patch versionado em
+  `tools/custom-rasterizer-gpu`.
+
 ### Textura — Backend B (rasterizador na GPU via ZLUDA)
 - **2ª frente de textura: kernels CUDA do `custom_rasterizer` rodando na AMD via
   ZLUDA.** Compilado o `rasterizer_gpu.cu` (com `thrust`) com o nvcc (CUDA Toolkit

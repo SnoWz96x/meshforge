@@ -41,6 +41,8 @@ def build_texture(mesh_glb_path: str, ref_image_name: str, params: dict[str, Any
     texture_size = int(params.get("texture_size", 1024))
     delight = bool(params.get("delight", True))
     upscale = bool(params.get("upscale", True))
+    # Backend de rasterização (render/bake): cpu (A, padrão) | cuda (B, via ZLUDA).
+    render_device = "cuda" if params.get("texture_backend") == "gpu" else "cpu"
 
     graph: dict[str, Any] = {
         "1": {"class_type": "Hy3DLoadMesh", "inputs": {"glb_path": mesh_glb_path}},
@@ -52,7 +54,7 @@ def build_texture(mesh_glb_path: str, ref_image_name: str, params: dict[str, Any
             "camera_distance": 1.45, "ortho_scale": 1.2}},
         "4": {"class_type": "Hy3DRenderMultiView", "inputs": {
             "trimesh": ["2", 0], "render_size": render_size, "texture_size": texture_size,
-            "camera_config": ["3", 0], "normal_space": "world"}},
+            "camera_config": ["3", 0], "normal_space": "world", "render_device": render_device}},
         "5": {"class_type": "DownloadAndLoadHy3DPaintModel", "inputs": {"model": PAINT_MODEL}},
         "6": {"class_type": "LoadImage", "inputs": {"image": ref_image_name}},
     }
