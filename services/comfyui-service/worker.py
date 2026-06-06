@@ -100,8 +100,16 @@ def _newest_glb(pattern: str = "*.glb") -> Path:
     return glbs[0]
 
 
-# Defaults de textura ajustados para 16 GB de VRAM (vistas a 512² estouram a GPU).
-_TEXTURE_DEFAULTS = {"view_size": 256, "render_size": 768, "texture_size": 768, "texture_steps": 15}
+# Defaults de textura PREMIUM, calibrados para 16 GB (vistas a 512² estouram).
+# delight (albedo limpo) + paint + bake + inpaint; texturas a 1024².
+_TEXTURE_DEFAULTS = {
+    "view_size": 384,
+    "render_size": 1024,
+    "texture_size": 1024,
+    "texture_steps": 25,
+    "delight_steps": 40,
+    "delight": True,
+}
 
 
 def _texturize(client, payload: dict, glb_path: Path, ref_name: str, params: dict,

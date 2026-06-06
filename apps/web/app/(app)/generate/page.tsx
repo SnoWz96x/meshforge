@@ -177,7 +177,8 @@ export default function GeneratePage() {
                   beta
                 </span>
                 <br />
-                Pinta a cor PBR (Hunyuan3D paint) na sua AMD. Adiciona ~2 min e usa mais VRAM.
+                Cor PBR premium na sua AMD (Hunyuan3D paint + delight + inpaint). Adiciona alguns
+                minutos e usa mais VRAM.
               </span>
             </label>
           )}

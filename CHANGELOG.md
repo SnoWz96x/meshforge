@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Textura PREMIUM (delight + inpaint)
+- **Salto de qualidade na textura** — pipeline premium: **delight** (modelo
+  `hunyuan3d-delight-v2-0`, baixado no 1º uso) deixa a cor *lighting-invariant*
+  (some o escuro/sombra → albedo limpo e vivo) + **inpaint de costuras** (vertice +
+  CV2, ambos CPU → sem buracos/emendas) + texturas **1024²** e vistas a 384.
+  **Validado**: cogumelo passou de cinza-escuro para **vermelho vibrante com
+  bolinhas creme** (render comprova). `services/comfyui-service/hunyuan3d_texture.py`
+  reescrito; defaults premium no worker (`params.delight`, default on).
+
 ### Qualidade 3D (shape + viewer)
 - **Shape muito melhor — remoção de fundo antes do 3D**: o Hunyuan3D espera o objeto
   isolado; com o fundo da cena o shape degenerava num **cubo/bloco**. Agora o worker
