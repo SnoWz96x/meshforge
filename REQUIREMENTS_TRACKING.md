@@ -6,10 +6,10 @@ funcional algo que não esteja realmente implementado e validado.**
 
 **Legenda:** ✅ feito & validado · 🚧 em desenvolvimento/parcial · ⬜ pendente · 🧪 código pronto, não validado E2E
 
-> 🔍 **Auditoria completa em [AUDIT.md](AUDIT.md)** — foco atual é o roadmap de
-> refinamento (R1 estabilização → R2 polimento → R3 fortalecimento) antes de novas features.
+> Refinamento R1→R2→R3 **concluído** (estabilização, polimento, fortalecimento — ver
+> [CHANGELOG.md](CHANGELOG.md)). Pipeline Texto→3D **com textura premium** rodando na AMD.
 
-Última atualização: 2026-06-04
+Última atualização: 2026-06-06
 
 ---
 

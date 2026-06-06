@@ -7,13 +7,14 @@ Estado real por fase. Datas relativas; foco em "pronto quando validado", sem pla
 | **0 — Fundação** | Monorepo, Docker (pg/redis/minio), schema DB, shared-types, tool-manager | ✅ |
 | **1 — Tool & Model Manager** | model-manager, download ComfyUI/Hunyuan3D/Blender + modelos | ✅ |
 | **2 — Geração 2D** | API, fila, storage, worker ComfyUI, SDXL text2img **na GPU AMD via ZLUDA** | ✅ |
-| **2.1 — img2img** | Validar image-to-image E2E (upload + denoise) | 🚧 |
-| **3 — Geração 3D** | Worker Hunyuan3D (img→3D, text→3D), viewer 3D | ⬜ |
-| **4 — Blender Pipeline** | Headless: cleanup → retopo (Instant Meshes) → UV → bake → texturas | ⬜ |
-| **5 — Orquestração** | State machine do pipeline completo, retries, lock de GPU | ⬜ |
-| **6 — Export Manager** | GLB/GLTF/OBJ/FBX/STL/USDZ + previews turntable | ⬜ |
-| **7 — UI Premium** | Front-end SaaS premium (galeria, projetos, viewer 3D, dark/light, drag&drop) | ⬜ |
-| **8 — Hardening & Docs** | Auth, observabilidade, docs, k8s inicial | ⬜ |
+| **2.1 — img2img** | Image-to-image E2E (upload + denoise) | ✅ |
+| **3 — Geração 3D** | Worker Hunyuan3D (img→3D, text→3D), viewer 3D | ✅ |
+| **3.1 — Textura premium** | Paint + **delight** + **ESRGAN upscale** + inpaint na AMD/ZLUDA; níveis de qualidade; 2 backends de rasterização (CPU/GPU) com seletor | ✅ |
+| **4 — Blender Pipeline** | Headless: **cleanup + decimate** ✅. Retopo quad / UV bake ⬜ | 🚧 |
+| **5 — Orquestração** | Encadeamento Texto→3D num job ✅. Pipeline 1-clique completo (→ otimizar → exportar) | 🚧 |
+| **6 — Export Manager** | GLB/GLTF/OBJ/FBX/STL/USDZ/PLY via Blender headless | ✅ |
+| **7 — UI Premium** | Shell premium, gerar, biblioteca (malhas 3D), exportar, ⌘K, dark/light, drag&drop, seletor de motor | ✅ |
+| **8 — Hardening & Docs** | Testes + CI, logger estruturado, supervisor ComfyUI, RUNBOOK ✅. Auth/observabilidade/k8s ⬜ | 🚧 |
 
 > **Decisão tomada (2026-06-04):** produto **Híbrido** — Next.js web-first +
 > shell Tauri depois. Identidade/UX em [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
@@ -25,13 +26,13 @@ a base. Detalhes e priorização em **[AUDIT.md](AUDIT.md)**.
 
 | Etapa | Conteúdo | Status |
 | :-- | :-- | :-- |
-| **R1 — Estabilização** | ✅ error boundary, ✅ geração atômica, ✅ glb robusto (diff), ✅ health profundo (db/redis/comfyui), ✅ validação de env, ✅ cancelamento. 🚧 supervisão/auto-restart do ComfyUI (health detecta; restart automático pendente) | 🚧 quase |
-| **R2 — Polimento** | viewer 3D profissional, biblioteca com malhas+thumbnails, WebSocket de progresso, toasts, CRUD projetos | ⬜ |
-| **R3 — Fortalecimento** | ESLint/Prettier/CI, testes, logger estruturado, métricas, RUNBOOK, conformance checker, otimização de disco/thumbnails | ⬜ |
+| **R1 — Estabilização** | error boundary, geração atômica, glb robusto (diff), health profundo, validação de env, cancelamento, **supervisor do ComfyUI (auto-restart)** | ✅ |
+| **R2 — Polimento** | viewer 3D profissional, biblioteca com malhas+thumbnails, WebSocket de progresso, toasts, CRUD projetos | ✅ |
+| **R3 — Fortalecimento** | ESLint/Prettier/CI, testes (Vitest+pytest), logger estruturado (jobId), RUNBOOK, otimização de disco | ✅ |
 
-## Próximos candidatos imediatos (após refino)
-1. **Fase 7 (UI)** — front-end premium (depende da decisão Web/Desktop/Híbrido).
-2. **Fase 3 (3D)** — Hunyuan3D na GPU.
-3. **Fase 2.1** — validar img2img.
+## Próximos candidatos imediatos
+1. **Orquestração 1-clique** — prompt → 3D → textura → otimizar → exportar, num fluxo só.
+2. **Galeria open-source** — explorar/importar modelos 3D livres.
+3. **Avançado** — retopo quad + UV bake; multi-imagem → 3D (fidelidade em volta todo).
 
 Ver [FUTURE_AUTOMATION_ROADMAP.md](FUTURE_AUTOMATION_ROADMAP.md) para automações futuras (não no escopo atual).

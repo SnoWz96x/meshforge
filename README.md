@@ -4,7 +4,7 @@
 
 <br/>
 
-**A self-hosted, open-source pipeline that turns a prompt or an image into a production-ready 3D asset.**
+**A self-hosted, open-source pipeline that turns a prompt or an image into a production-ready, textured 3D asset — running on your own GPU.**
 
 Powered end-to-end by free and open components — no proprietary clouds, no per-generation fees.
 
@@ -12,12 +12,11 @@ Powered end-to-end by free and open components — no proprietary clouds, no per
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-FF6B35.svg?style=flat-square)](LICENSE)
 [![Status](https://img.shields.io/badge/status-active%20development-E8336D.svg?style=flat-square)](#roadmap)
-[![Phase](https://img.shields.io/badge/phase-0%20·%20foundation-FFB347.svg?style=flat-square)](#roadmap)
+[![Runs on AMD](https://img.shields.io/badge/runs%20on-AMD%20·%20ZLUDA-ED1C24.svg?style=flat-square)](#hardware)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6.svg?style=flat-square&logo=typescript&logoColor=white)](#tech-stack)
 [![Python](https://img.shields.io/badge/Python-3776AB.svg?style=flat-square&logo=python&logoColor=white)](#tech-stack)
-[![Docker](https://img.shields.io/badge/Docker-2496ED.svg?style=flat-square&logo=docker&logoColor=white)](#quickstart)
 
-[Overview](#overview) · [Pipeline](#the-pipeline) · [Architecture](#architecture) · [Quickstart](#quickstart) · [Roadmap](#roadmap)
+[Overview](#overview) · [What works today](#what-works-today) · [Pipeline](#the-pipeline) · [Architecture](#architecture) · [Quickstart](#quickstart) · [Roadmap](#roadmap)
 
 </div>
 
@@ -27,192 +26,203 @@ Powered end-to-end by free and open components — no proprietary clouds, no per
 
 **MeshForge** is a desktop / self-hosted platform for AI-driven 3D generation, inspired by tools
 like Meshy — but built entirely on open-source models you run on your own hardware. It orchestrates
-four best-in-class projects into a single, automated pipeline:
+best-in-class projects into a single pipeline: a text prompt or image becomes a clean, **textured**
+3D mesh you can optimize and export to any format.
 
 | Stage | Engine | Role |
 | :-- | :-- | :-- |
-| 🎨 **Image generation** | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) + [Stable Diffusion XL](https://stability.ai/) | Text-to-Image, Image-to-Image, base assets |
-| 🧊 **3D generation** | [Hunyuan3D 2.0](https://github.com/Tencent/Hunyuan3D-2) | Image-to-3D, Text-to-3D, initial mesh |
-| 🛠️ **Mesh processing** | [Blender](https://www.blender.org/) (headless) + [Instant Meshes](https://github.com/wjakob/instant-meshes) | Retopology, UV, baking, texturing |
-| 📦 **Export** | Blender exporters | GLB · GLTF · OBJ · FBX · STL · USDZ |
+| 🎨 **Image generation** | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) + [Stable Diffusion XL](https://stability.ai/) | Text-to-Image, Image-to-Image |
+| 🧊 **3D generation** | [Hunyuan3D 2.0](https://github.com/Tencent/Hunyuan3D-2) | Image-to-3D, Text-to-3D mesh |
+| 🖌️ **Texturing** | Hunyuan3D Paint + Delight + ESRGAN | PBR albedo, lighting-invariant, upscaled |
+| 🛠️ **Mesh processing & export** | [Blender](https://www.blender.org/) (headless) | Cleanup, decimate, multi-format export |
 
-> [!NOTE]
-> These four engines are **first-class citizens of the core pipeline** — not optional plugins.
-> MeshForge manages their installation, versioning and updates automatically.
+> [!IMPORTANT]
+> **It runs on AMD.** The entire stack — including Hunyuan3D's texture painting, which is officially
+> CUDA-only — runs on an **AMD Radeon RX 7800 XT via [ZLUDA](https://github.com/vosen/ZLUDA)**. The
+> texture rasterizer was compiled from source for both a CPU path and a GPU (CUDA-via-ZLUDA) path.
 
-## Why MeshForge
+## What works today
 
-- **Fully local & private** — your prompts, images and models never leave your machine.
-- **One-command bootstrap** — installs dependencies, clones tools, downloads models, configures DB, queue and storage.
-- **Automated end-to-end** — from prompt to a clean, retopologized, textured, multi-format export, with zero manual steps in Blender.
-- **Hardware-aware** — a pluggable GPU backend (`ZLUDA · ROCm · CUDA · DirectML`) runs the same pipeline on AMD or NVIDIA.
-- **Resumable & observable** — every pipeline stage is a first-class, retryable job with full history.
+Every item below is implemented **and validated end-to-end** (no mockups, no placeholders):
+
+- ✅ **Text → Image** and **Image → Image** (SDXL on the GPU).
+- ✅ **Image → 3D** and **Text → 3D** — a single chained generation (SDXL → background removal → Hunyuan3D → mesh).
+- ✅ **Premium PBR texture** on AMD — Hunyuan3D **paint + delight** (clean, lighting-invariant albedo)
+  **+ ESRGAN upscale + seam inpaint**, baked at up to **2048²**.
+- ✅ **Quality tiers** (Balanced / High / Max) — dial geometry detail (octree, face count) and texture resolution.
+- ✅ **Two texture rasterizer backends**, selectable per generation from the UI: **CPU** (recommended)
+  and **GPU** (CUDA kernels via ZLUDA) — both compiled from the Hunyuan3D `custom_rasterizer`.
+- ✅ **Mesh optimization** (Blender headless) — cleanup (weld, loose, normals, holes) and **decimate**
+  (e.g. 100k → 15k faces, texture preserved).
+- ✅ **Professional export** — GLB · GLTF · OBJ · FBX · STL · USDZ · PLY (textures preserved).
+- ✅ **Real-time 3D viewer** (react-three-fiber): materials, wireframe, original texture, turntable.
+- ✅ **Platform**: real-time progress over WebSocket, queue (BullMQ), history, projects, health checks,
+  a self-healing **ComfyUI supervisor**, tests + CI.
+
+> A simple prompt like *"a cute red mushroom"* yields a photoreal, textured 3D mushroom — geometry,
+> red cap with cream dots, textured stem — fully on AMD.
 
 ## The pipeline
 
 ```mermaid
 flowchart LR
-    P([Prompt / Image]) --> SDXL[SDXL · ComfyUI<br/>text2img / img2img]
-    SDXL --> H3D[Hunyuan3D 2.0<br/>image/text → mesh]
-    H3D --> BL
+    P([Prompt / Image]) --> SDXL[SDXL · ComfyUI<br/>text2img]
+    SDXL --> BG[Background removal<br/>rembg]
+    BG --> H3D[Hunyuan3D<br/>image → mesh]
+    H3D --> TX
 
-    subgraph BL [Blender · headless]
+    subgraph TX [Texturing · AMD/ZLUDA]
       direction TB
-      C[Cleanup] --> R[Retopology<br/>Instant Meshes] --> U[UV unwrap] --> BK[PBR bake] --> TX[Texture fix]
+      D[Delight] --> PT[Multiview paint] --> UP[ESRGAN upscale] --> BK[Bake · CPU/GPU raster] --> IN[Seam inpaint]
     end
 
-    BL --> PV[Turntable preview]
-    PV --> EX[Export<br/>GLB · GLTF · OBJ · FBX · STL · USDZ]
-    EX --> DONE([Project saved])
+    TX --> OPT[Optimize<br/>Blender: cleanup · decimate]
+    OPT --> EX[Export<br/>GLB · GLTF · OBJ · FBX · STL · USDZ · PLY]
 
     classDef hot fill:#FF6B35,stroke:#E8336D,color:#fff;
     class SDXL,H3D,EX hot;
 ```
 
-Each box is an **independent, idempotent job**. A failure in any stage retries only that stage —
-the expensive 3D generation is never recomputed because retopology hiccuped. A GPU lock prevents
-SDXL and Hunyuan3D from competing for VRAM.
+Each box is an **independent job**; progress streams to the UI in real time. A failure in a late stage
+never recomputes the expensive 3D generation.
 
 ## Architecture
 
 ```mermaid
 flowchart TB
-    WEB[Frontend · Next.js<br/>gallery · 3D viewer · projects] -->|REST + WebSocket| API
+    WEB[Frontend · Next.js<br/>generate · viewer · export · library] -->|REST + WebSocket| API
 
     subgraph CP [Control plane · TypeScript]
-      API[API · NestJS] --> ORCH[Pipeline orchestrator<br/>state machine]
+      API[API · NestJS] --> EV[Queue events → DB]
     end
 
     API --- PG[(PostgreSQL<br/>Prisma)]
     API --- RD[(Redis<br/>BullMQ + pub/sub)]
     API --- ST[(Storage<br/>local FS / MinIO)]
+    API -->|Blender headless| BLEXP[Export / Optimize]
 
-    ORCH -->|dispatch by queue| CMP & H3W & BLW
+    EV -->|comfyui queue| CMP
 
     subgraph DP [Compute plane · Python / GPU]
-      CMP[ComfyUI service<br/>SDXL + Hunyuan3D] 
-      H3W[Hunyuan3D worker]
-      BLW[Blender worker]
+      CMP[ComfyUI worker<br/>SDXL · Hunyuan3D · texture · rembg]
     end
-
-    TM[tool-manager] -.clone · pin · verify.-> AUX[(auxiliary-tools)]
-    MM[model-manager] -.download · hash.-> AUX
 ```
 
-**Design principle:** a clear split between the **control plane** (TypeScript: API, DB, queue, orchestration)
-and the **compute plane** (Python GPU workers). Workers are stateless — they read inputs from storage,
-write outputs back, and update job state in the database.
+**Design principle:** a clear split between the **control plane** (TypeScript: API, DB, queue) and the
+**compute plane** (Python GPU worker). The worker is stateless — reads inputs from storage, writes
+outputs back, and never touches the database (the API reflects queue events into Postgres). Mesh
+export/optimize run via Blender headless straight from the API.
 
-See **[ARCHITECTURE.md](ARCHITECTURE.md)** for the full design, data model and decision log.
+See **[ARCHITECTURE.md](ARCHITECTURE.md)** and the operational **[RUNBOOK.md](RUNBOOK.md)**.
 
 ## Tech stack
 
 <table>
-<tr><td><b>Frontend</b></td><td>Next.js · React · TypeScript · Tailwind · shadcn/ui · react-three-fiber</td></tr>
-<tr><td><b>Backend</b></td><td>NestJS · BullMQ · WebSockets</td></tr>
-<tr><td><b>AI / 3D workers</b></td><td>Python · ComfyUI · Hunyuan3D · Blender (headless)</td></tr>
-<tr><td><b>Data</b></td><td>PostgreSQL · Prisma · Redis</td></tr>
-<tr><td><b>Storage</b></td><td>Local filesystem (S3-compatible abstraction) · MinIO (optional)</td></tr>
-<tr><td><b>Infra</b></td><td>Docker · Docker Compose · pnpm monorepo</td></tr>
+<tr><td><b>Frontend</b></td><td>Next.js · React · TypeScript · Tailwind · react-three-fiber · @tanstack/react-query</td></tr>
+<tr><td><b>Backend</b></td><td>NestJS · BullMQ · WebSockets · Prisma</td></tr>
+<tr><td><b>AI / 3D</b></td><td>Python · ComfyUI · SDXL · Hunyuan3D (shape + paint + delight) · rembg · ESRGAN · Blender (headless)</td></tr>
+<tr><td><b>GPU runtime</b></td><td>AMD RX 7800 XT via ZLUDA (HIP/ROCm) · custom_rasterizer compiled CPU + GPU</td></tr>
+<tr><td><b>Data / Infra</b></td><td>PostgreSQL · Redis · local FS (S3-like) / MinIO · Docker Compose · pnpm monorepo · GitHub Actions CI</td></tr>
 </table>
+
+## Hardware
+
+MeshForge runs the full stack locally and is GPU-bound. Reference machine: **AMD Radeon RX 7800 XT
+(16 GB)** + 32 GB RAM, Windows, via **ZLUDA** (HIP SDK 6.x). The quality presets and texture settings
+are calibrated for **16 GB VRAM** (sequential model loading; views at 256–384 to avoid OOM).
+
+| Tier | GPU | Notes |
+| :-- | :-- | :-- |
+| Reference | 16 GB (RX 7800 XT) | Validated end-to-end, incl. premium texture |
+| Recommended | 16–24 GB (AMD or NVIDIA) | More headroom for higher view/texture sizes |
+
+> On NVIDIA the same pipeline runs natively (CUDA). The AMD/ZLUDA path is the hard-won one — see
+> **[RUNBOOK.md](RUNBOOK.md)** for the launchers and the lessons learned.
 
 ## Quickstart
 
-> **Prerequisites:** Node 20+ · pnpm · Docker Desktop · Git · Python 3.10+ · a supported GPU (see [Hardware](#hardware)).
-
-```powershell
-# Windows
-git clone https://github.com/SnoWz96x/meshforge.git
-cd meshforge
-./install.ps1                      # full bootstrap (infra + deps + tools + models)
-```
+> **Prerequisites:** Node 20+ · pnpm · Docker Desktop · Git · Python 3.11 · a GPU + its runtime
+> (AMD: HIP SDK + ZLUDA / NVIDIA: CUDA). ComfyUI (with the Hunyuan3D wrapper), Blender and the models
+> are managed under `auxiliary-tools/`.
 
 ```bash
-# Linux / WSL2 / macOS
 git clone https://github.com/SnoWz96x/meshforge.git
 cd meshforge
-./install.sh
+pnpm install
+pnpm infra:up            # Postgres + Redis (+ MinIO)
+pnpm db:generate && pnpm db:migrate
 ```
 
-Skip the heavy downloads while developing:
-
-```powershell
-./install.ps1 -SkipTools -SkipModels
-```
-
-Then:
+Then bring up the engine and the app (see **[RUNBOOK.md](RUNBOOK.md)** for the exact order and the
+ComfyUI launchers):
 
 ```bash
-pnpm db:migrate     # create the schema (first run)
-pnpm dev            # start the services in dev mode
+# 1) ComfyUI on the GPU — prefer the supervisor (auto-restart):
+powershell -ExecutionPolicy Bypass -File tools/bootstrap/comfyui-supervisor.ps1
+# 2) API · 3) Python worker · 4) web
+pnpm --filter @meshforge/api dev      # :3001
+pnpm --filter @meshforge/web dev      # :3000  → http://localhost:3000
 ```
 
 | Service | URL |
 | :-- | :-- |
 | Web UI | http://localhost:3000 |
 | API | http://localhost:3001 |
-| MinIO console | http://localhost:9001 |
+| ComfyUI | http://localhost:8188 |
 | Postgres | `localhost:5433` |
-
-## Hardware
-
-MeshForge runs the full stack locally and is therefore GPU-bound.
-
-| Tier | GPU | Notes |
-| :-- | :-- | :-- |
-| Recommended | 16–24 GB VRAM (RX 7800 XT / RTX 4080 / 4090 / 3090) | Comfortable SDXL + Hunyuan3D with sequential offload |
-| Minimum | 12 GB VRAM | Aggressive offload, slower |
-
-The GPU backend is configurable per worker via `GPU_BACKEND` (`zluda` · `rocm` · `cuda` · `directml`),
-so the same pipeline runs on **AMD (ZLUDA / ROCm)** or **NVIDIA (CUDA)**.
 
 ## Project structure
 
 ```
 meshforge/
-├── apps/             web (Next.js) · api (NestJS)
-├── services/         comfyui-service (Python worker: SDXL + Hunyuan3D)
-│                     # blender-worker, pipeline-orchestrator: planejados (Fases 4–5)
+├── apps/             web (Next.js) · api (NestJS — generate, assets, export/optimize)
+├── services/
+│   ├── comfyui-service/   Python worker: SDXL · Hunyuan3D shape+texture · rembg
+│   └── blender-service/   headless export_mesh.py · process_mesh.py
 ├── packages/         shared-types · db (Prisma) · queue · storage
-├── tools/            bootstrap · tool-manager · model-manager
+├── tools/
+│   ├── bootstrap/         ComfyUI/ZLUDA launchers · supervisor
+│   ├── custom-rasterizer-cpu/   CPU build of Hunyuan3D rasterizer (+ patches)
+│   └── custom-rasterizer-gpu/   GPU (CUDA-via-ZLUDA) build
 ├── infra/            docker-compose
-├── auxiliary-tools/  ComfyUI / Hunyuan3D / Blender  (managed, git-ignored)
+├── auxiliary-tools/  ComfyUI / Hunyuan3D / Blender / models  (managed, git-ignored)
 └── assets/           brand assets
 ```
 
-> Estado real e auditoria: [AUDIT.md](AUDIT.md) · [REQUIREMENTS_TRACKING.md](REQUIREMENTS_TRACKING.md)
+> Honest, detailed status: **[REQUIREMENTS_TRACKING.md](REQUIREMENTS_TRACKING.md)** ·
+> **[CHANGELOG.md](CHANGELOG.md)** · **[AUDIT.md](AUDIT.md)**
 
 ## Roadmap
 
-| Phase | Milestone | Status |
+| Area | Milestone | Status |
 | :-- | :-- | :-- |
-| **0** | Foundation — monorepo, Docker infra, DB schema, tool-manager | ✅ Done |
-| **1** | Tool & Model Manager — model downloads | ✅ Done |
-| **2** | 2D generation — SDXL via ComfyUI on AMD/ZLUDA, jobs, queue, storage | ✅ Done |
-| **3** | 3D generation — Hunyuan3D worker, live 3D viewer | ⬜ |
-| **4** | Blender pipeline — retopo, UV, bake, texturing | ⬜ |
-| **5** | Orchestration — full pipeline, retries, GPU lock | ⬜ |
-| **6** | Export — GLB/GLTF/OBJ/FBX/STL/USDZ + previews | ⬜ |
-| **7** | Premium UI — gallery, projects, generation | 🚧 Milestone 1 done (web shell + generate + library) |
-| **8** | Hardening & docs | ⬜ |
-
-> Estado detalhado e honesto: [REQUIREMENTS_TRACKING.md](REQUIREMENTS_TRACKING.md) · [ROADMAP.md](ROADMAP.md)
+| Foundation | Monorepo, Docker infra, DB schema, tool/model managers | ✅ |
+| 2D generation | SDXL via ComfyUI on AMD/ZLUDA, jobs, queue, storage | ✅ |
+| 3D generation | Hunyuan3D Image→3D and Text→3D, live 3D viewer | ✅ |
+| **Texturing** | Premium PBR on AMD (paint + delight + upscale + inpaint), 2 backends | ✅ |
+| Quality | Tiers (geometry + texture), per-generation engine selector | ✅ |
+| Mesh processing | Blender headless cleanup + decimate | ✅ |
+| Export | GLB / GLTF / OBJ / FBX / STL / USDZ / PLY | ✅ |
+| Hardening | Tests, CI, structured logs, ComfyUI supervisor, RUNBOOK | ✅ |
+| Orchestration | One-click full pipeline (prompt → optimized export) | 🚧 |
+| Advanced | Quad retopology + UV bake · multi-image → 3D · open-source model gallery | ⬜ |
 
 ## Acknowledgements
 
-MeshForge stands on the shoulders of giants. Huge thanks to the teams behind
+MeshForge stands on the shoulders of giants — huge thanks to
 [ComfyUI](https://github.com/comfyanonymous/ComfyUI),
 [Stability AI / SDXL](https://stability.ai/),
 [Tencent Hunyuan3D](https://github.com/Tencent/Hunyuan3D-2),
-[Blender](https://www.blender.org/) and
-[Instant Meshes](https://github.com/wjakob/instant-meshes).
+[Blender](https://www.blender.org/),
+[ZLUDA](https://github.com/vosen/ZLUDA) and
+[rembg](https://github.com/danielgatis/rembg).
 
 ## License
 
 Released under the **GNU AGPL-3.0**. See [LICENSE](LICENSE).
 
-> Note: the integrated models (SDXL, Hunyuan3D) carry their own licenses with usage restrictions —
-> review them before any commercial use.
+> The integrated models (SDXL, Hunyuan3D) carry their own licenses with usage restrictions — review
+> them before any commercial use.
 
 <div align="center">
 <br/>
