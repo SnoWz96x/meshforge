@@ -106,7 +106,7 @@ export interface GalleryModel {
   license: string;
   creator: string;
   collection: string;
-  source: "cc0" | "khronos" | "polyhaven";
+  source: "cc0" | "khronos" | "polyhaven" | "polypizza";
 }
 
 export interface GallerySource {

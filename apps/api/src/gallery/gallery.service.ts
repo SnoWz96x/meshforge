@@ -21,11 +21,16 @@ const TOXSAM_BASE = "https://raw.githubusercontent.com/ToxSam/open-source-3d-ass
 const KHRONOS_BASE =
   "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models";
 const POLYHAVEN_API = "https://api.polyhaven.com";
+// Poly Pizza (Quaternius/Kenney etc. — 8000+ low-poly CC0/CC-BY). Precisa de chave
+// GRÁTIS (1 min em https://poly.pizza/api) em POLY_PIZZA_KEY; sem a chave, a fonte
+// não aparece (opt-in). É baseada em busca.
+const POLYPIZZA_API = "https://api.poly.pizza/v1.1";
 
 const ALLOWED_HOSTS = new Set([
   "raw.githubusercontent.com",
   "dl.polyhaven.org",
   "api.polyhaven.com",
+  "static.poly.pizza",
 ]);
 
 const BLENDER_PATH =
@@ -35,7 +40,7 @@ const EXPORT_SCRIPT =
   process.env.BLENDER_EXPORT_SCRIPT ??
   resolve(process.cwd(), "../../services/blender-service/export_mesh.py");
 
-export type GallerySource = "cc0" | "khronos" | "polyhaven";
+export type GallerySource = "cc0" | "khronos" | "polyhaven" | "polypizza";
 
 export interface GalleryModel {
   id: string;
@@ -64,22 +69,61 @@ export class GalleryService {
   ) {}
 
   async list(search?: string, limit = 60, source?: string): Promise<GalleryModel[]> {
+    const cap = Math.min(300, Math.max(1, limit));
+    // Poly Pizza é por busca + chave (não entra no cache agregado).
+    if (source === "polypizza") {
+      return this.searchPolyPizza(search?.trim() || "popular", cap);
+    }
     let all = await this.load();
     if (source) all = all.filter((m) => m.source === source);
     const q = search?.trim().toLowerCase();
     if (q)
       all = all.filter((m) => `${m.name} ${m.collection} ${m.creator}`.toLowerCase().includes(q));
-    return all.slice(0, Math.min(300, Math.max(1, limit)));
+    return all.slice(0, cap);
   }
 
   async sources() {
     const all = await this.load();
     const count = (s: GallerySource) => all.filter((m) => m.source === s).length;
-    return [
+    const out = [
       { id: "cc0", label: "CC0 Registry", count: count("cc0") },
       { id: "khronos", label: "glTF Samples", count: count("khronos") },
       { id: "polyhaven", label: "Poly Haven", count: count("polyhaven") },
     ];
+    if (process.env.POLY_PIZZA_KEY) out.push({ id: "polypizza", label: "Poly Pizza", count: 8000 });
+    return out;
+  }
+
+  // ─── Poly Pizza (busca ao vivo; requer POLY_PIZZA_KEY) ─────────────────────
+  private async searchPolyPizza(query: string, limit: number): Promise<GalleryModel[]> {
+    const key = process.env.POLY_PIZZA_KEY;
+    if (!key) return [];
+    type Item = {
+      ID?: string;
+      Title?: string;
+      Thumbnail?: string;
+      Download?: string;
+      Creator?: { Username?: string };
+      Attribution?: string;
+    };
+    const res = await fetch(
+      `${POLYPIZZA_API}/search/${encodeURIComponent(query)}?limit=${Math.min(100, limit)}`,
+      { headers: { "x-auth-token": key }, signal: AbortSignal.timeout(15_000) },
+    );
+    if (!res.ok) return [];
+    const data = (await res.json()) as { results?: Item[] };
+    return (data.results ?? [])
+      .filter((r) => r.Download)
+      .map((r, i) => ({
+        id: `polypizza:${r.ID ?? i}`,
+        name: r.Title ?? "modelo",
+        thumb: r.Thumbnail ?? "",
+        url: r.Download!,
+        license: r.Attribution ? "CC-BY" : "CC0",
+        creator: r.Creator?.Username ?? "Poly Pizza",
+        collection: "Poly Pizza",
+        source: "polypizza" as const,
+      }));
   }
 
   private async load(): Promise<GalleryModel[]> {

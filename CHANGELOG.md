@@ -11,6 +11,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
   - **glTF Samples** ([Khronos](https://github.com/KhronosGroup/glTF-Sample-Assets)) — 118 modelos.
   - **Poly Haven** ([polyhaven.com](https://polyhaven.com)) — 436 modelos CC0 realistas
     (baixados como glTF e **convertidos para GLB com o Blender headless**, textura preservada).
+  - **Poly Pizza** ([poly.pizza](https://poly.pizza)) — 8000+ low-poly (Quaternius/Kenney) —
+    **opt-in**: aparece só com uma chave grátis em `POLY_PIZZA_KEY` (busca ao vivo).
 - API: `GET /gallery?search=&source=&limit=` + `GET /gallery/sources` (agrega/cacheia)
   e `POST /gallery/import {projectId,source,url,name}` → asset `MESH_RAW` (origem
   restrita a hosts confiáveis). Importados viram malhas normais — texturizar/otimizar/exportar.
