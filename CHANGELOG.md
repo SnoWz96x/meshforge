@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Texto→3D — sujeito único (shape consistente)
+- **Reforço de prompt no Texto→3D**: o SDXL às vezes gerava um *padrão/colagem* de
+  objetos (→ shape virava um "painel" plano). O worker agora injeta, só no fluxo 3D,
+  termos de isolamento ("single object, centered, isolated on plain white background,
+  product shot…") + negativos ("pattern, tiled, multiple, collage…") no txt2img.
+  `params.isolate_subject` (default on). **Validado E2E**: prompt simples
+  "a cute red mushroom" → **um** cogumelo foto-realista → shape correto → **textura
+  premium** (render comprova ponta-a-ponta).
+
 ### Textura PREMIUM (delight + inpaint)
 - **Salto de qualidade na textura** — pipeline premium: **delight** (modelo
   `hunyuan3d-delight-v2-0`, baixado no 1º uso) deixa a cor *lighting-invariant*

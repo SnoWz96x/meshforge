@@ -167,6 +167,30 @@ def _remove_bg(data: bytes) -> bytes:
         return data
 
 
+# Reforço de prompt para Texto→3D: empurra o SDXL a gerar UM sujeito limpo e
+# isolado (senão sai um padrão/colagem -> shape vira "painel"). Aplicado só no 3D.
+_SUBJECT_SUFFIX = (
+    ", single object, one, full body, centered, isolated on plain white background, "
+    "product shot, studio lighting, simple"
+)
+_SUBJECT_NEG = (
+    "pattern, tiled, multiple objects, collage, grid, seamless texture, repeated, "
+    "busy background, cropped, close-up"
+)
+
+
+def _isolate_prompt(params: dict) -> dict:
+    """Retorna params com prompt/negativo reforçados para sujeito único (Texto→3D)."""
+    if not params.get("isolate_subject", True):
+        return params
+    neg = params.get("negativePrompt") or ""
+    return {
+        **params,
+        "prompt": (params.get("prompt") or "") + _SUBJECT_SUFFIX,
+        "negativePrompt": (neg + ", " + _SUBJECT_NEG).strip(", "),
+    }
+
+
 def run_job(payload: dict) -> dict:
     """Trabalho bloqueante (roda em thread). Devolve um JobResult."""
     client = ComfyUIClient(COMFYUI_URL)
@@ -176,8 +200,8 @@ def run_job(payload: dict) -> dict:
 
     # ---- Pipeline Texto→3D (SDXL txt2img -> Hunyuan3D shape) ----
     if stage == "TEXT_TO_3D":
-        # Etapa 1/2: gera a imagem a partir do prompt.
-        graph = build_txt2img(params)
+        # Etapa 1/2: gera a imagem (com prompt reforçado para sujeito único).
+        graph = build_txt2img(_isolate_prompt(params))
         pid = client.submit(graph)
         _publish_progress(payload, 8)
         client.wait(pid, on_progress=lambda p: _publish_progress(payload, max(8, min(45, int(p * 0.45)))))
