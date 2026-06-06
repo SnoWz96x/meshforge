@@ -4,6 +4,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Added — Fluxo "um lugar só" no resultado 3D
+- **Ações inline no resultado da geração**: quando sai uma malha 3D na tela Gerar,
+  aparecem na hora **Otimizar para tempo real** (decimate ~20k faces) e **Exportar**
+  (GLB · FBX · STL · OBJ · USDZ) — sem navegar pra outra tela. Fecha o ciclo
+  *prompt → modelo texturizado → otimizado → exportado* num lugar só. Reusa as APIs
+  `/assets/:id/process` e `/assets/:id/export` (já validadas).
 ### Added — Galeria de modelos 3D open-source (multi-fonte, 1.500+)
 - **Tela "Galeria"**: navegue e **importe modelos 3D open-source** para a biblioteca,
   de **3 fontes livres** (sem API key), com filtro por fonte e busca:

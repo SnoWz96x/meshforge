@@ -638,15 +638,107 @@ function ResultPane({
           )}
         </div>
         {error && <p className="mt-3 text-[12px] text-danger">{error}</p>}
-        {status === "SUCCEEDED" && outAsset && (
-          <a
-            href={assetUrl(outAsset.id)}
-            download
-            className="mt-4 rounded-sm border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-medium text-content-secondary transition-colors hover:text-content"
-          >
-            {isMesh ? "Baixar GLB (3D)" : "Baixar PNG"}
-          </a>
+        {status === "SUCCEEDED" &&
+          outAsset &&
+          (isMesh ? (
+            <MeshActions assetId={outAsset.id} />
+          ) : (
+            <a
+              href={assetUrl(outAsset.id)}
+              download
+              className="mt-4 rounded-sm border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-medium text-content-secondary transition-colors hover:text-content"
+            >
+              Baixar PNG
+            </a>
+          ))}
+      </div>
+    </div>
+  );
+}
+
+const EXPORT_FMTS = ["glb", "fbx", "stl", "obj", "usdz"] as const;
+
+async function downloadAsset(id: string, filename: string) {
+  const res = await fetch(assetUrl(id));
+  if (!res.ok) throw new Error(`Download falhou (${res.status})`);
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// Ações inline no resultado 3D: otimizar (decimate) + exportar em qualquer formato,
+// sem sair da tela Gerar — fecha o ciclo prompt → modelo → otimizado → exportado.
+function MeshActions({ assetId }: { assetId: string }) {
+  const [id, setId] = useState(assetId);
+  const [busyFmt, setBusyFmt] = useState<string | null>(null);
+
+  useEffect(() => setId(assetId), [assetId]);
+
+  const optimize = useMutation({
+    mutationFn: () => api.processAsset(id, "decimate", 20000),
+    onSuccess: (a) => {
+      setId(a.id);
+      toast.success("Malha otimizada (~20k faces) — pronta para tempo real.");
+    },
+    onError: (e) => toast.error(`Otimizar falhou: ${(e as Error).message}`),
+  });
+
+  const exporter = useMutation({
+    mutationFn: (fmt: string) => api.exportAsset(id, fmt),
+    onMutate: (fmt) => setBusyFmt(fmt),
+    onSuccess: async (a, fmt) => {
+      const ext = a.format === "zip" ? `${fmt}.zip` : a.format;
+      try {
+        await downloadAsset(a.id, `meshforge-${id.slice(0, 6)}.${ext}`);
+        toast.success(`Exportado em ${fmt.toUpperCase()}.`);
+      } catch (e) {
+        toast.error(`Baixar falhou: ${(e as Error).message}`);
+      }
+    },
+    onError: (e) => toast.error(`Exportação falhou: ${(e as Error).message}`),
+    onSettled: () => setBusyFmt(null),
+  });
+
+  const busy = optimize.isPending || !!busyFmt;
+
+  return (
+    <div className="mt-4 flex w-full flex-col items-center gap-2">
+      <button
+        disabled={busy}
+        onClick={() => optimize.mutate()}
+        className={cn(
+          "flex items-center gap-2 rounded-sm border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-medium text-content-secondary transition-colors",
+          busy ? "cursor-not-allowed opacity-50" : "hover:border-accent hover:text-content",
         )}
+      >
+        {optimize.isPending ? (
+          <Loader2 size={13} className="animate-spin" />
+        ) : (
+          <Wand2 size={13} className="text-accent" />
+        )}
+        Otimizar para tempo real (~20k faces)
+      </button>
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
+        <span className="text-[11px] text-content-muted">Exportar:</span>
+        {EXPORT_FMTS.map((f) => (
+          <button
+            key={f}
+            disabled={busy}
+            onClick={() => exporter.mutate(f)}
+            className={cn(
+              "flex items-center gap-1 rounded-sm border border-border bg-surface-2 px-2 py-1 text-[11px] font-semibold uppercase text-content-secondary transition-colors",
+              busy ? "cursor-not-allowed opacity-50" : "hover:border-accent hover:text-content",
+            )}
+          >
+            {busyFmt === f ? <Loader2 size={11} className="animate-spin" /> : null}
+            {f}
+          </button>
+        ))}
       </div>
     </div>
   );
