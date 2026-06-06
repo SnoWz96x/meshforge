@@ -32,7 +32,7 @@ a base. Detalhes e priorização em **[AUDIT.md](AUDIT.md)**.
 
 ## Próximos candidatos imediatos
 1. **Orquestração 1-clique** — prompt → 3D → textura → otimizar → exportar, num fluxo só.
-2. **Galeria open-source** — explorar/importar modelos 3D livres.
+2. ~~Galeria open-source~~ ✅ — explorar/importar modelos 3D CC0 (tela Galeria).
 3. **Avançado** — retopo quad + UV bake; multi-imagem → 3D (fidelidade em volta todo).
 
 Ver [FUTURE_AUTOMATION_ROADMAP.md](FUTURE_AUTOMATION_ROADMAP.md) para automações futuras (não no escopo atual).

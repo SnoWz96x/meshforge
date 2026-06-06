@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles, FolderKanban, Images, Workflow, Package, Settings } from "lucide-react";
+import { Sparkles, FolderKanban, Images, Workflow, Package, Settings, Boxes } from "lucide-react";
 import { BrandMark, Wordmark } from "@/components/brand";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const NAV = [
   { href: "/generate", label: "Gerar", icon: Sparkles },
   { href: "/projects", label: "Projetos", icon: FolderKanban },
   { href: "/library", label: "Biblioteca", icon: Images },
+  { href: "/gallery", label: "Galeria", icon: Boxes },
   { href: "/workflow", label: "Workflow", icon: Workflow, soon: true },
   { href: "/export", label: "Exportar", icon: Package },
 ];

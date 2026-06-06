@@ -84,7 +84,26 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ op, targetFaces }),
     }),
+  galleryList: (search?: string, limit = 60) =>
+    req<GalleryModel[]>(
+      `/gallery?limit=${limit}${search ? `&search=${encodeURIComponent(search)}` : ""}`,
+    ),
+  galleryImport: (projectId: string, url: string, name: string) =>
+    req<Asset>("/gallery/import", {
+      method: "POST",
+      body: JSON.stringify({ projectId, url, name }),
+    }),
 };
+
+export interface GalleryModel {
+  id: string;
+  name: string;
+  thumb: string;
+  url: string;
+  license: string;
+  creator: string;
+  collection: string;
+}
 
 // Upload multipart (não usa o helper req(): o browser define o boundary).
 export async function uploadImage(projectId: string, file: File): Promise<Asset> {

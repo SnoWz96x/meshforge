@@ -4,6 +4,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Added — Galeria de modelos 3D open-source (CC0)
+- **Tela "Galeria"**: navegue e **importe modelos 3D open-source (CC0)** para a sua
+  biblioteca — fonte [ToxSam/open-source-3d-assets](https://github.com/ToxSam/open-source-3D-assets)
+  (991+ GLBs CC0, sem API key). Busca + grade de thumbnails + 1 clique para importar.
+- API: `GET /gallery?search=&limit=` (agrega/cacheia o registro JSON do GitHub) e
+  `POST /gallery/import {projectId,url,name}` (baixa o GLB de domínio confiável →
+  asset `MESH_RAW`). Os modelos importados viram malhas normais — dá pra texturizar,
+  otimizar e exportar. **Validado E2E** (listar + importar). Item de menu novo.
+- Docs: **README reescrito** (lidera com o feito AMD/ZLUDA + "o que funciona hoje"),
+  ROADMAP/REQUIREMENTS atualizados ao estado real.
+
 ### Added — Limpeza & otimização de malha (Blender headless)
 - **Otimização/correção de malha** via Blender 4.2 headless
   (`services/blender-service/process_mesh.py`): **limpeza** (solda vértices, remove
