@@ -79,7 +79,7 @@ export const api = {
     req<Generation>(`/generations/${id}/cancel`, { method: "POST" }),
   exportAsset: (id: string, format: string) =>
     req<Asset>(`/assets/${id}/export`, { method: "POST", body: JSON.stringify({ format }) }),
-  processAsset: (id: string, op: "cleanup" | "decimate", targetFaces?: number) =>
+  processAsset: (id: string, op: "cleanup" | "decimate" | "remesh", targetFaces?: number) =>
     req<Asset>(`/assets/${id}/process`, {
       method: "POST",
       body: JSON.stringify({ op, targetFaces }),

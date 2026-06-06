@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Added — Retopologia (remesh) com textura preservada (Blender headless)
+- **Remesh de topologia limpa**: nova op `remesh` (`process_mesh.py`) gera uma malha
+  **watertight quad-dominante** via **voxel remesh** (robusto em malhas de IA) + UV novo
+  (Smart UV) e **re-bakeia a textura** na nova topologia via **bake EMIT** (Cycles CPU,
+  ~2s, albedo preservado). API `op: "remesh"`; UI: botão **"Remesh — topologia limpa
+  (com textura)"** na tela Exportar. **Validado**: cogumelo 100k → remesh limpo com a
+  textura vermelha preservada.
+  *(Nota honesta: o QuadriFlow quad-remesh se mostrou instável nessas malhas — colapsava
+  ou não remeshava; o voxel remesh + bake EMIT é o caminho confiável adotado.)*
 ### Added — Fluxo "um lugar só" no resultado 3D
 - **Ações inline no resultado da geração**: quando sai uma malha 3D na tela Gerar,
   aparecem na hora **Otimizar para tempo real** (decimate ~20k faces) e **Exportar**

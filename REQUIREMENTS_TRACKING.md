@@ -30,7 +30,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | Image-to-Image | ✅ | Validado E2E (upload → SDXL_IMG2IMG na GPU → variação gerada, via UI e API) |
 | Image-to-3D (shape) | ✅ | **Integrado E2E** — UI Imagem→3D (drag&drop) → malha .glb na GPU → viewer 3D. Validado via API e navegador |
 | Text-to-3D | ✅ | **Encadeado E2E** — `TEXT_TO_3D` roda SDXL txt2img → Hunyuan3D shape num job só (2 saídas: imagem + malha), UI "Texto → 3D". Validado prompt→malha .glb na GPU |
-| Retopologia automática | 🚧 | Decimate (redução de polígonos preservando UV) via Blender headless ✅; quad-remesh/retopo real ainda não |
+| Retopologia automática | ✅ | Blender headless: decimate (reduz preservando UV) + **remesh watertight** (voxel) com **re-bake da textura** (EMIT) na nova topologia. (QuadriFlow quad-puro é instável nessas malhas — voxel é o confiável.) |
 | Correção automática de malha | ✅ | Blender headless: solda vértices, remove soltos, normais, fecha buracos (`process_mesh.py`, op `cleanup`) |
 | Texturização (Hunyuan3D paint) | ✅ **premium** (Backend A) | **Textura PBR premium na AMD/ZLUDA**: delight (albedo limpo) + paint + bake + inpaint de costuras, texturas 1024². Validado E2E (cogumelo foto-realista). Backend B (GPU nativo) pendente |
 | Ajuste automático de texturas | ⬜ | Fase 4 |
