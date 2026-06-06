@@ -100,16 +100,36 @@ def _newest_glb(pattern: str = "*.glb") -> Path:
     return glbs[0]
 
 
-# Defaults de textura PREMIUM, calibrados para 16 GB (vistas a 512² estouram).
-# delight (albedo limpo) + paint + bake + inpaint; texturas a 1024².
-_TEXTURE_DEFAULTS = {
-    "view_size": 384,
-    "render_size": 1024,
-    "texture_size": 1024,
-    "texture_steps": 25,
-    "delight_steps": 40,
-    "delight": True,
+# Níveis de qualidade (fidelidade vs tempo/VRAM). Calibrados para 16 GB.
+#   shape: octree_resolution (detalhe), max_facenum (polígonos), shape_steps (difusão)
+#   textura: view_size (nitidez do paint), texture_size (res. do mapa), passos
+_QUALITY = {
+    "balanced": {
+        "octree_resolution": 256, "max_facenum": 40000, "shape_steps": 30,
+        "view_size": 384, "render_size": 1024, "texture_size": 1024,
+        "texture_steps": 25, "delight_steps": 40,
+    },
+    "high": {
+        "octree_resolution": 320, "max_facenum": 100000, "shape_steps": 50,
+        "view_size": 384, "render_size": 1024, "texture_size": 2048,
+        "texture_steps": 35, "delight_steps": 50,
+    },
+    "max": {
+        "octree_resolution": 384, "max_facenum": 160000, "shape_steps": 50,
+        # view_size mantido em 384 (448 arrisca OOM nos 16 GB); o ganho de "max"
+        # vem de octree/faces (geometria) e texture_size 2048.
+        "view_size": 384, "render_size": 1024, "texture_size": 2048,
+        "texture_steps": 40, "delight_steps": 50,
+    },
 }
+_TEXTURE_DEFAULTS = {**_QUALITY["balanced"], "delight": True}
+
+
+def _apply_quality(params: dict) -> dict:
+    """Injeta os parâmetros do nível de qualidade (sem sobrescrever o que o usuário
+    passou explicitamente). `params.quality` = balanced|high|max."""
+    preset = _QUALITY.get(params.get("quality", "balanced"), _QUALITY["balanced"])
+    return {**preset, **params}
 
 
 def _texturize(client, payload: dict, glb_path: Path, ref_name: str, params: dict,
@@ -195,7 +215,7 @@ def run_job(payload: dict) -> dict:
     """Trabalho bloqueante (roda em thread). Devolve um JobResult."""
     client = ComfyUIClient(COMFYUI_URL)
     stage = payload["stage"]
-    params = payload.get("params", {})
+    params = _apply_quality(payload.get("params", {}))
     _publish_progress(payload, 5)
 
     # ---- Pipeline Texto→3D (SDXL txt2img -> Hunyuan3D shape) ----

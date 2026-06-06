@@ -45,6 +45,7 @@ export default function GeneratePage() {
   const [cfg, setCfg] = useState(7);
   const [denoise, setDenoise] = useState(0.6);
   const [texture, setTexture] = useState(false);
+  const [quality, setQuality] = useState<"balanced" | "high" | "max">("high");
   const [input, setInput] = useState<Asset | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -62,7 +63,7 @@ export default function GeneratePage() {
           projectId,
           type: "IMAGE_TO_3D",
           inputAssetId: input!.id,
-          params: { steps, texture },
+          params: { steps, texture, quality },
         });
       }
       if (mode === "IMAGE_TO_IMAGE") {
@@ -81,7 +82,7 @@ export default function GeneratePage() {
           type: "TEXT_TO_3D",
           prompt,
           negativePrompt: negative,
-          params: { width: size.w, height: size.h, steps, cfg, texture },
+          params: { width: size.w, height: size.h, steps, cfg, texture, quality },
         });
       }
       return api.createGeneration({
@@ -162,6 +163,32 @@ export default function GeneratePage() {
               converte em <b>malha 3D</b> (.glb) — tudo numa geração só. Leva mais tempo (2
               modelos).
             </p>
+          )}
+          {(mode === "IMAGE_TO_3D" || mode === "TEXT_TO_3D") && (
+            <Field label="Qualidade 3D">
+              <div className="grid grid-cols-3 gap-1.5">
+                {(
+                  [
+                    ["balanced", "Equilibrado"],
+                    ["high", "Alta"],
+                    ["max", "Máxima"],
+                  ] as const
+                ).map(([q, lbl]) => (
+                  <button
+                    key={q}
+                    onClick={() => setQuality(q)}
+                    className={cn(
+                      "rounded-sm border px-2 py-2 text-[11px] font-medium transition-colors",
+                      quality === q
+                        ? "border-accent bg-accent-soft text-content"
+                        : "border-border bg-surface-2 text-content-secondary hover:text-content",
+                    )}
+                  >
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            </Field>
           )}
           {(mode === "IMAGE_TO_3D" || mode === "TEXT_TO_3D") && (
             <label className="-mt-1 flex cursor-pointer items-start gap-2.5 rounded-sm border border-border bg-surface-2 p-3">

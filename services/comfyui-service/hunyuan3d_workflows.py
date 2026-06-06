@@ -22,7 +22,8 @@ DEFAULT_DIT = os.environ.get("HUNYUAN3D_DIT_MODEL", "model.fp16.safetensors")
 
 def build_image_to_3d(image_name: str, params: dict[str, Any]) -> dict:
     """Grafo image→3D (shape only). `image_name` deve estar no input do ComfyUI."""
-    steps = int(params.get("steps", 30))
+    # shape_steps tem prioridade (níveis de qualidade); cai p/ steps por compat.
+    steps = int(params.get("shape_steps", params.get("steps", 30)))
     guidance = float(params.get("guidance_scale", 5.5))
     seed = int(params.get("seed", 42))
     octree = int(params.get("octree_resolution", 256))
