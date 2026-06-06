@@ -32,7 +32,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | Text-to-3D | ✅ | **Encadeado E2E** — `TEXT_TO_3D` roda SDXL txt2img → Hunyuan3D shape num job só (2 saídas: imagem + malha), UI "Texto → 3D". Validado prompt→malha .glb na GPU |
 | Retopologia automática | ⬜ | Fase 4 (Blender + Instant Meshes) |
 | Correção automática de malha | ⬜ | Fase 4 |
-| Texturização (Hunyuan3D paint) | ✅ (Backend A) | **Textura PBR rodando na AMD/ZLUDA** (render/bake CPU + pintura GPU). Opção `texture` nos fluxos 3D; validado E2E (asset `.glb` com PBRMaterial + textura 768²). Backend B (GPU nativo) pendente |
+| Texturização (Hunyuan3D paint) | ✅ **premium** (Backend A) | **Textura PBR premium na AMD/ZLUDA**: delight (albedo limpo) + paint + bake + inpaint de costuras, texturas 1024². Validado E2E (cogumelo foto-realista). Backend B (GPU nativo) pendente |
 | Ajuste automático de texturas | ⬜ | Fase 4 |
 | Pipeline completo (prompt→modelo final) | ⬜ | Fase 5 (orquestrador) |
 | Exportação GLB/GLTF/OBJ/FBX/STL/USDZ | ⬜ | Fase 6 |
