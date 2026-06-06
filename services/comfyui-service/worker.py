@@ -107,19 +107,19 @@ _QUALITY = {
     "balanced": {
         "octree_resolution": 256, "max_facenum": 40000, "shape_steps": 30,
         "view_size": 384, "render_size": 1024, "texture_size": 1024,
-        "texture_steps": 25, "delight_steps": 40,
+        "texture_steps": 25, "delight_steps": 40, "upscale": False,
     },
     "high": {
         "octree_resolution": 320, "max_facenum": 100000, "shape_steps": 50,
         "view_size": 384, "render_size": 1024, "texture_size": 2048,
-        "texture_steps": 35, "delight_steps": 50,
+        "texture_steps": 35, "delight_steps": 50, "upscale": True,
     },
     "max": {
         "octree_resolution": 384, "max_facenum": 160000, "shape_steps": 50,
         # view_size mantido em 384 (448 arrisca OOM nos 16 GB); o ganho de "max"
-        # vem de octree/faces (geometria) e texture_size 2048.
+        # vem de octree/faces (geometria) e texture_size 2048 + upscale.
         "view_size": 384, "render_size": 1024, "texture_size": 2048,
-        "texture_steps": 40, "delight_steps": 50,
+        "texture_steps": 40, "delight_steps": 50, "upscale": True,
     },
 }
 _TEXTURE_DEFAULTS = {**_QUALITY["balanced"], "delight": True}

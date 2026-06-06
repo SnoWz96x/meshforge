@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Refino de fidelidade 3D (níveis + upscale)
+- **Níveis de qualidade** `params.quality` = balanced/high/max (UI: "Qualidade 3D",
+  default Alta): escalam geometria (octree 256→384, max_facenum 40k→160k, passos) e
+  textura (1024→2048, passos). Validado em 16 GB ("Alta" = 100k faces + textura 2048²).
+- **Upscale da textura (ESRGAN 4x-UltraSharp)**: as vistas pintadas passam por upscale
+  **antes do bake** → textura realmente mais **nítida** (não só maior). Roda na GPU via
+  ZLUDA (validado, sem OOM). On por padrão em Alta/Máxima. **Validado**: textura do
+  cogumelo ficou nitidamente mais detalhada (lamelas/linhas finas, bolinhas definidas).
+
 ### Texto→3D — sujeito único (shape consistente)
 - **Reforço de prompt no Texto→3D**: o SDXL às vezes gerava um *padrão/colagem* de
   objetos (→ shape virava um "painel" plano). O worker agora injeta, só no fluxo 3D,

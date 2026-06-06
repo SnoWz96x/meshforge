@@ -24,6 +24,7 @@ from typing import Any
 
 PAINT_MODEL = "hunyuan3d-paint-v2-0"
 DELIGHT_MODEL = "hunyuan3d-delight-v2-0"
+UPSCALE_MODEL = "4x-UltraSharp.pth"
 
 
 def build_texture(mesh_glb_path: str, ref_image_name: str, params: dict[str, Any]) -> dict:
@@ -39,6 +40,7 @@ def build_texture(mesh_glb_path: str, ref_image_name: str, params: dict[str, Any
     render_size = int(params.get("render_size", 1024))
     texture_size = int(params.get("texture_size", 1024))
     delight = bool(params.get("delight", True))
+    upscale = bool(params.get("upscale", True))
 
     graph: dict[str, Any] = {
         "1": {"class_type": "Hy3DLoadMesh", "inputs": {"glb_path": mesh_glb_path}},
@@ -72,8 +74,19 @@ def build_texture(mesh_glb_path: str, ref_image_name: str, params: dict[str, Any
         "normal_maps": ["4", 0], "position_maps": ["4", 1],
         "view_size": view_size, "steps": steps, "seed": seed,
         "camera_config": ["3", 0]}}
+
+    # Upscale opcional das vistas pintadas (ESRGAN) ANTES do bake -> textura
+    # realmente mais nítida (não só maior). Default on.
+    if upscale:
+        graph["16"] = {"class_type": "UpscaleModelLoader", "inputs": {"model_name": UPSCALE_MODEL}}
+        graph["17"] = {"class_type": "ImageUpscaleWithModel", "inputs": {
+            "upscale_model": ["16", 0], "image": ["10", 0]}}
+        bake_images = ["17", 0]
+    else:
+        bake_images = ["10", 0]
+
     graph["11"] = {"class_type": "Hy3DBakeFromMultiview", "inputs": {
-        "images": ["10", 0], "renderer": ["4", 2], "camera_config": ["3", 0]}}
+        "images": bake_images, "renderer": ["4", 2], "camera_config": ["3", 0]}}
     graph["12"] = {"class_type": "Hy3DMeshVerticeInpaintTexture", "inputs": {
         "texture": ["11", 0], "mask": ["11", 1], "renderer": ["11", 2]}}
     graph["13"] = {"class_type": "CV2InpaintTexture", "inputs": {
