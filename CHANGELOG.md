@@ -4,6 +4,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Added — Limpeza & otimização de malha (Blender headless)
+- **Otimização/correção de malha** via Blender 4.2 headless
+  (`services/blender-service/process_mesh.py`): **limpeza** (solda vértices, remove
+  geometria solta, recalcula normais, fecha buracos) e **decimate** (reduz a
+  contagem de faces para um alvo, preservando UV/textura — ex.: 100k→15k).
+  API `POST /assets/:id/process {op, targetFaces}` → nova malha `MESH_RETOPO`.
+  UI: seção **"Otimizar malha"** na tela Exportar. **Validado E2E** (decimate
+  100k→target com textura 2048² preservada). Malhas otimizadas aparecem na
+  Biblioteca e no Exportar.
+
 ### Added — Exportação multi-formato (Blender headless)
 - **Exporte os modelos 3D em GLB / GLTF / OBJ / FBX / STL / USDZ / PLY** — requisito
   central, agora real. Usa **Blender 4.2 headless** (`services/blender-service/export_mesh.py`)

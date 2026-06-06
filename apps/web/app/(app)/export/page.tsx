@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Download, Loader2, Box, PackageOpen } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Download, Loader2, Box, PackageOpen, Wand2, Gauge } from "lucide-react";
 import { Topbar } from "@/components/shell/topbar";
 import { MeshThumb } from "@/components/mesh-thumb";
 import { api, assetUrl, type Asset } from "@/lib/api";
@@ -24,7 +24,7 @@ async function loadMeshes(): Promise<Asset[]> {
   const all = await Promise.all(projects.map((p) => api.getProject(p.id)));
   return all
     .flatMap((p) => p.assets ?? [])
-    .filter((a) => a.format === "glb" && a.kind === "MESH_RAW")
+    .filter((a) => a.format === "glb" && (a.kind === "MESH_RAW" || a.kind === "MESH_RETOPO"))
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
@@ -43,9 +43,11 @@ async function downloadAsset(id: string, filename: string) {
 }
 
 export default function ExportPage() {
+  const qc = useQueryClient();
   const { data: meshes, isLoading } = useQuery({ queryKey: ["meshes"], queryFn: loadMeshes });
   const [selected, setSelected] = useState<string | null>(null);
   const [busyFmt, setBusyFmt] = useState<string | null>(null);
+  const [targetFaces, setTargetFaces] = useState(20000);
 
   const selectedMesh = useMemo(
     () => meshes?.find((m) => m.id === selected) ?? null,
@@ -66,6 +68,17 @@ export default function ExportPage() {
     },
     onError: (e) => toast.error(`Exportação falhou: ${(e as Error).message}`),
     onSettled: () => setBusyFmt(null),
+  });
+
+  const processor = useMutation({
+    mutationFn: (op: "cleanup" | "decimate") =>
+      api.processAsset(selected as string, op, targetFaces),
+    onSuccess: async (asset, op) => {
+      await qc.invalidateQueries({ queryKey: ["meshes"] });
+      setSelected(asset.id);
+      toast.success(op === "cleanup" ? "Malha limpa criada." : "Malha otimizada criada.");
+    },
+    onError: (e) => toast.error(`Processamento falhou: ${(e as Error).message}`),
   });
 
   return (
@@ -112,7 +125,65 @@ export default function ExportPage() {
         </div>
 
         {/* Painel de exportação */}
-        <div className="flex flex-col gap-4 border-t border-border p-5 lg:border-l lg:border-t-0">
+        <div className="flex flex-col gap-4 overflow-y-auto border-t border-border p-5 lg:border-l lg:border-t-0">
+          {/* Otimizar (Blender) */}
+          <div>
+            <h2 className="flex items-center gap-2 text-[13px] font-semibold text-content">
+              <Wand2 size={15} className="text-accent" />
+              Otimizar malha
+            </h2>
+            <p className="mt-1 text-[11px] leading-relaxed text-content-muted">
+              Limpeza (solda vértices, remove soltos, corrige normais) e redução de polígonos — cria
+              uma nova malha.
+            </p>
+            <div className="mt-2 flex flex-col gap-1.5">
+              <button
+                disabled={!selectedMesh || processor.isPending}
+                onClick={() => processor.mutate("cleanup")}
+                className={cn(
+                  "flex items-center justify-between rounded-sm border border-border bg-surface-2 px-3 py-2 text-left text-[12px] font-medium text-content transition-colors",
+                  !selectedMesh || processor.isPending
+                    ? "cursor-not-allowed opacity-50"
+                    : "hover:border-accent hover:bg-accent-soft",
+                )}
+              >
+                Limpar malha
+                {processor.isPending && processor.variables === "cleanup" && (
+                  <Loader2 size={14} className="animate-spin text-accent" />
+                )}
+              </button>
+              <label className="flex items-center gap-1.5 text-[11px] text-content-muted">
+                <Gauge size={13} /> Alvo de faces
+                <input
+                  type="number"
+                  min={500}
+                  max={200000}
+                  step={1000}
+                  value={targetFaces}
+                  onChange={(e) => setTargetFaces(Number(e.target.value))}
+                  className="ml-auto w-24 rounded-sm border border-border bg-surface-2 px-2 py-1 text-right text-[12px] text-content outline-none focus:border-accent"
+                />
+              </label>
+              <button
+                disabled={!selectedMesh || processor.isPending}
+                onClick={() => processor.mutate("decimate")}
+                className={cn(
+                  "flex items-center justify-between rounded-sm border border-border bg-surface-2 px-3 py-2 text-left text-[12px] font-medium text-content transition-colors",
+                  !selectedMesh || processor.isPending
+                    ? "cursor-not-allowed opacity-50"
+                    : "hover:border-accent hover:bg-accent-soft",
+                )}
+              >
+                Reduzir para ~{targetFaces.toLocaleString("pt-BR")} faces
+                {processor.isPending && processor.variables === "decimate" && (
+                  <Loader2 size={14} className="animate-spin text-accent" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="h-px bg-border" />
+
           <div>
             <h2 className="flex items-center gap-2 text-[13px] font-semibold text-content">
               <PackageOpen size={15} className="text-accent" />

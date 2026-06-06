@@ -35,6 +35,11 @@ export class AssetsController {
     return this.assets.export(id, body?.format ?? "");
   }
 
+  @Post("assets/:id/process")
+  async process(@Param("id") id: string, @Body() body: { op?: string; targetFaces?: number }) {
+    return this.assets.process(id, body?.op ?? "cleanup", body?.targetFaces ?? 20000);
+  }
+
   @Get("assets/:id")
   async download(@Param("id") id: string, @Res() res: Response) {
     const { asset, stream, mime } = await this.assets.open(id);

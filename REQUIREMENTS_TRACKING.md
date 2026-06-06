@@ -20,7 +20,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | **ComfyUI** | ✅ | Rodando em `C:\ComfyUI-Zluda` :8188 via ZLUDA; gera imagens reais |
 | **Stable Diffusion XL** | ✅ | text2img validado (imagem real gerada na RX 7800 XT) |
 | **Hunyuan3D 2.0** | ✅ (shape) | **Image→3D integrado no produto E2E**: API `IMAGE_TO_3D` → worker `HUNYUAN3D_SHAPE` → ComfyUI/ZLUDA → `.glb` no storage (asset MESH_RAW) → **viewer 3D na UI**. ~78s com kernels em cache. **Textura PBR funcionando na AMD** (Backend A: rasterizador CPU + pintura GPU/ZLUDA) — opção nos fluxos 3D. |
-| **Blender** | 🚧 | 4.2.3 baixado e executa. Automação (retopo/UV/bake) NÃO implementada (Fase 4) |
+| **Blender** | ✅ (headless) | 4.2.3 — **automação headless ativa**: exportação multi-formato + limpeza/decimate de malha (`services/blender-service/`). Retopo quad/bake ainda não |
 
 ## 2. Funcionalidades de geração
 
@@ -30,8 +30,8 @@ funcional algo que não esteja realmente implementado e validado.**
 | Image-to-Image | ✅ | Validado E2E (upload → SDXL_IMG2IMG na GPU → variação gerada, via UI e API) |
 | Image-to-3D (shape) | ✅ | **Integrado E2E** — UI Imagem→3D (drag&drop) → malha .glb na GPU → viewer 3D. Validado via API e navegador |
 | Text-to-3D | ✅ | **Encadeado E2E** — `TEXT_TO_3D` roda SDXL txt2img → Hunyuan3D shape num job só (2 saídas: imagem + malha), UI "Texto → 3D". Validado prompt→malha .glb na GPU |
-| Retopologia automática | ⬜ | Fase 4 (Blender + Instant Meshes) |
-| Correção automática de malha | ⬜ | Fase 4 |
+| Retopologia automática | 🚧 | Decimate (redução de polígonos preservando UV) via Blender headless ✅; quad-remesh/retopo real ainda não |
+| Correção automática de malha | ✅ | Blender headless: solda vértices, remove soltos, normais, fecha buracos (`process_mesh.py`, op `cleanup`) |
 | Texturização (Hunyuan3D paint) | ✅ **premium** (Backend A) | **Textura PBR premium na AMD/ZLUDA**: delight (albedo limpo) + paint + bake + inpaint de costuras, texturas 1024². Validado E2E (cogumelo foto-realista). Backend B (GPU nativo) pendente |
 | Ajuste automático de texturas | ⬜ | Fase 4 |
 | Pipeline completo (prompt→modelo final) | ⬜ | Fase 5 (orquestrador) |

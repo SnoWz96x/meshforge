@@ -10,7 +10,13 @@ async function loadAllAssets(): Promise<Asset[]> {
   const all = await Promise.all(projects.map((p) => api.getProject(p.id)));
   return all
     .flatMap((p) => p.assets ?? [])
-    .filter((a) => a.kind === "IMAGE" || a.kind === "PREVIEW" || a.kind === "MESH_RAW")
+    .filter(
+      (a) =>
+        a.kind === "IMAGE" ||
+        a.kind === "PREVIEW" ||
+        a.kind === "MESH_RAW" ||
+        a.kind === "MESH_RETOPO",
+    )
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 

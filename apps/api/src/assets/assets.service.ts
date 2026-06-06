@@ -24,6 +24,11 @@ const BLENDER_PATH =
 const EXPORT_SCRIPT =
   process.env.BLENDER_EXPORT_SCRIPT ??
   resolve(process.cwd(), "../../services/blender-service/export_mesh.py");
+const PROCESS_SCRIPT =
+  process.env.BLENDER_PROCESS_SCRIPT ??
+  resolve(process.cwd(), "../../services/blender-service/process_mesh.py");
+
+export const PROCESS_OPS = ["cleanup", "decimate"] as const;
 
 const MIME: Record<string, string> = {
   png: "image/png",
@@ -132,6 +137,54 @@ export class AssetsService {
           storageUri: uri,
           sizeBytes: BigInt(data.length),
           meta: meta as object,
+        },
+      });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  /** Limpa/otimiza uma malha (.glb) via Blender headless. Devolve uma nova malha. */
+  async process(id: string, op: string, targetFaces = 20000) {
+    if (!(PROCESS_OPS as readonly string[]).includes(op)) {
+      throw new BadRequestException(`Operação não suportada: ${op}`);
+    }
+    const asset = await this.prisma.asset.findUnique({ where: { id } });
+    if (!asset) throw new NotFoundException(`Asset ${id} não encontrado`);
+    if (asset.format !== "glb") throw new BadRequestException("O processamento parte de um .glb");
+    const srcPath = this.storage.driver.localPath(this.storage.driver.keyFromUri(asset.storageUri));
+
+    const dir = await mkdtemp(join(tmpdir(), "mf-process-"));
+    try {
+      const outFile = join(dir, "out.glb");
+      await execFileAsync(
+        BLENDER_PATH,
+        [
+          "--background",
+          "--factory-startup",
+          "--python",
+          PROCESS_SCRIPT,
+          "--",
+          srcPath,
+          outFile,
+          op,
+          String(Math.max(200, Math.min(500_000, targetFaces))),
+        ],
+        { timeout: 300_000, maxBuffer: 1024 * 1024 * 64 },
+      );
+      const data = await readFile(outFile);
+      const newId = randomUUID();
+      const key = assetKey(asset.projectId, newId, "glb");
+      const uri = await this.storage.driver.put(key, data);
+      return this.prisma.asset.create({
+        data: {
+          id: newId,
+          projectId: asset.projectId,
+          kind: AssetKind.MESH_RETOPO,
+          format: "glb",
+          storageUri: uri,
+          sizeBytes: BigInt(data.length),
+          meta: { source: id, op, ...(op === "decimate" ? { targetFaces } : {}) },
         },
       });
     } finally {
