@@ -234,6 +234,13 @@ MeshForge stands on the shoulders of giants — huge thanks to
 [ZLUDA](https://github.com/vosen/ZLUDA) and
 [rembg](https://github.com/danielgatis/rembg).
 
+## Contributing
+
+Contributions are welcome — please read **[CONTRIBUTING.md](CONTRIBUTING.md)** first. It covers the
+ground rules (additive changes, no placeholders, validate end-to-end), the full pre-commit gate
+(`format:check` · `lint` · `typecheck` · `test` · `pytest`), Conventional Commits, and the
+environment gotchas.
+
 ## License
 
 Released under the **GNU AGPL-3.0**. See [LICENSE](LICENSE).
