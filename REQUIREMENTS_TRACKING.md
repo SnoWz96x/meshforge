@@ -9,7 +9,7 @@ funcional algo que não esteja realmente implementado e validado.**
 > Refinamento R1→R2→R3 **concluído** (estabilização, polimento, fortalecimento — ver
 > [CHANGELOG.md](CHANGELOG.md)). Pipeline Texto→3D **com textura premium** rodando na AMD.
 
-Última atualização: 2026-06-06
+Última atualização: 2026-06-07
 
 ---
 

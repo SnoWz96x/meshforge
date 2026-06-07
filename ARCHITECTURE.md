@@ -42,18 +42,19 @@ Frontend (Next.js) ──REST+WS── API (NestJS) ──┬── Postgres (es
 ## 4. Pipeline
 
 1. **SDXL/ComfyUI** — text2img / img2img (asset imagem).
-2. **Hunyuan3D 2.0** — image→3D / text→3D (malha bruta + textura inicial).
-3. **Blender (headless)** — cleanup → retopo (Instant Meshes) → UV → bake PBR →
-   ajuste de textura.
-4. **(opcional) ComfyUI** — upscale de textura.
-5. **Preview** turntable → **Export** (GLB/GLTF/OBJ/FBX/STL/USDZ) → projeto salvo.
+2. **Hunyuan3D 2.0** — image→3D / **multi-imagem→3D (multiview)** / text→3D (malha bruta).
+3. **Texturização (AMD/ZLUDA)** — delight → paint multiview → ESRGAN upscale → bake
+   (rasterizador CPU/GPU) → inpaint de costuras → **ajuste automático (`texfix`)**.
+4. **Blender (headless)** — cleanup · decimate · **remesh watertight (re-bake EMIT)** · texfix.
+5. **Preview** turntable → **Export** (GLB/GLTF/OBJ/FBX/STL/USDZ/PLY) → projeto salvo.
 
-Cada caixa é um `Job` com estado persistido; falha numa etapa só repete aquela
-etapa. Um **lock de GPU** impede SDXL e Hunyuan3D de disputarem a VRAM.
+Cada etapa é um `Job` reutilizável; o **pipeline 1-clique** (`FULL_PIPELINE`) encadeia
+tudo num job só (gerar → texturizar → ajustar → otimizar → exportar). Como o job é
+sequencial, SDXL e Hunyuan3D não disputam a VRAM (carregamento sequencial nos 16 GB).
 
-> Risco AMD conhecido: a textura nativa do Hunyuan3D usa kernels CUDA custom que
-> podem não rodar via ZLUDA. Plano B (a decidir na Fase 3/4): gerar textura via
-> ComfyUI (SDXL + ControlNet depth/normal projetada na malha).
+> Resolvido (AMD): a textura nativa do Hunyuan3D usa kernels CUDA custom — compilamos o
+> `custom_rasterizer` (CPU e GPU-via-ZLUDA) e a textura PBR roda na RX 7800 XT. O Backend A
+> (CPU) é o padrão; o B (GPU nativo) é experimental (mais lento via ZLUDA).
 
 ## 5. Banco de dados
 
@@ -74,9 +75,12 @@ publicado em `meshforge:progress` (pub/sub) → WebSocket → UI.
 
 `auxiliary-tools/` é reconstruída a partir de `manifest.lock.json`.
 - **git** (ComfyUI, Hunyuan3D): clone + checkout de commit fixado.
-- **release** (Blender, Instant Meshes): download + verificação de SHA256.
-- `check` reporta novas versões; `update` aplica sob confirmação com smoke-test
-  e rollback.
+- **release** (Blender): download + verificação de SHA256.
+- `check` reporta novas versões; **`update`** atualiza git tools sob confirmação
+  (`--yes`), com **rollback** se o checkout falhar e **proteção de árvore suja**
+  (não sobrescreve patches locais como o do ZLUDA salvo `--force`); `verify` revalida
+  integridade. (Voxel remesh do Blender substituiu o Instant Meshes na retopologia —
+  mais confiável nas malhas de IA.)
 
 ## 8. Modelos de IA (model-manager) — Fase 1
 

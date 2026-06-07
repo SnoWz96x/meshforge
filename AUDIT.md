@@ -6,6 +6,16 @@ Data: 2026-06-04. Foco: **estabilizar, polir e fortalecer a base** antes de nova
 > Princípio: nada aqui é inventado — cada item foi verificado no código/repositório.
 > O que está bom também é registrado, para não regredir.
 
+> [!NOTE]
+> **Snapshot histórico (2026-06-04).** Muitas lacunas abaixo já foram **resolvidas** desde
+> então — refinamento R1→R3 (error boundary, geração atômica, WebSocket, testes/lint/CI,
+> supervisor do ComfyUI, logs estruturados) **e** features: textura PBR na AMD, Text→3D,
+> **Multi-imagem→3D**, **pipeline 1-clique (`FULL_PIPELINE`)**, **export multi-formato**,
+> **remesh** + **ajuste auto de textura (`texfix`)**, **`update` manager** e **galeria
+> open-source**. Para o **estado atual e validado**, ver
+> [REQUIREMENTS_TRACKING.md](REQUIREMENTS_TRACKING.md) e [CHANGELOG.md](CHANGELOG.md).
+> Os itens marcados como pendentes aqui devem ser lidos como "naquela data".
+
 ---
 
 ## 0. Resumo executivo

@@ -32,9 +32,10 @@ best-in-class projects into a single pipeline: a text prompt or image becomes a 
 | Stage | Engine | Role |
 | :-- | :-- | :-- |
 | 🎨 **Image generation** | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) + [Stable Diffusion XL](https://stability.ai/) | Text-to-Image, Image-to-Image |
-| 🧊 **3D generation** | [Hunyuan3D 2.0](https://github.com/Tencent/Hunyuan3D-2) | Image-to-3D, Text-to-3D mesh |
-| 🖌️ **Texturing** | Hunyuan3D Paint + Delight + ESRGAN | PBR albedo, lighting-invariant, upscaled |
-| 🛠️ **Mesh processing & export** | [Blender](https://www.blender.org/) (headless) | Cleanup, decimate, multi-format export |
+| 🧊 **3D generation** | [Hunyuan3D 2.0](https://github.com/Tencent/Hunyuan3D-2) | Image-to-3D, Text-to-3D, **Multi-image → 3D** (multiview) |
+| 🖌️ **Texturing** | Hunyuan3D Paint + Delight + ESRGAN | PBR albedo, lighting-invariant, upscaled, **auto color/contrast adjust** |
+| 🛠️ **Mesh processing & export** | [Blender](https://www.blender.org/) (headless) | Cleanup, decimate, **watertight remesh + re-bake**, multi-format export |
+| 📦 **One-click pipeline** | orchestrated in a single job | Prompt → mesh → texture → optimize → export package |
 
 > [!IMPORTANT]
 > **It runs on AMD.** The entire stack — including Hunyuan3D's texture painting, which is officially
@@ -47,17 +48,24 @@ Every item below is implemented **and validated end-to-end** (no mockups, no pla
 
 - ✅ **Text → Image** and **Image → Image** (SDXL on the GPU).
 - ✅ **Image → 3D** and **Text → 3D** — a single chained generation (SDXL → background removal → Hunyuan3D → mesh).
+- ✅ **Multi-image → 3D** — reconstruct a mesh from **1–4 views** (front/left/right/back) via
+  `Hy3DGenerateMeshMultiView`, reusing the same base checkpoint (no extra model download).
+- ✅ **One-click full pipeline** (`FULL_PIPELINE`) — prompt → image → mesh → texture → **auto texture
+  adjust** → optimize (~20k) → multi-format export, all in **a single server-side job** (fire-and-forget).
 - ✅ **Premium PBR texture** on AMD — Hunyuan3D **paint + delight** (clean, lighting-invariant albedo)
   **+ ESRGAN upscale + seam inpaint**, baked at up to **2048²**.
+- ✅ **Automatic texture adjustment** (`texfix`) — hue-preserving auto levels + saturation on the baked albedo.
 - ✅ **Quality tiers** (Balanced / High / Max) — dial geometry detail (octree, face count) and texture resolution.
 - ✅ **Two texture rasterizer backends**, selectable per generation from the UI: **CPU** (recommended)
   and **GPU** (CUDA kernels via ZLUDA) — both compiled from the Hunyuan3D `custom_rasterizer`.
-- ✅ **Mesh optimization** (Blender headless) — cleanup (weld, loose, normals, holes) and **decimate**
-  (e.g. 100k → 15k faces, texture preserved).
+- ✅ **Mesh optimization** (Blender headless) — cleanup (weld, loose, normals, holes), **decimate**
+  (e.g. 100k → 15k faces, texture preserved), and **watertight voxel remesh with texture re-bake (EMIT)**.
 - ✅ **Professional export** — GLB · GLTF · OBJ · FBX · STL · USDZ · PLY (textures preserved).
+- ✅ **Open-source 3D gallery** — browse & import CC0 models from multiple sources (ToxSam, Khronos,
+  Poly Haven; Poly Pizza opt-in).
 - ✅ **Real-time 3D viewer** (react-three-fiber): materials, wireframe, original texture, turntable.
 - ✅ **Platform**: real-time progress over WebSocket, queue (BullMQ), history, projects, health checks,
-  a self-healing **ComfyUI supervisor**, tests + CI.
+  a self-healing **ComfyUI supervisor**, a safe tool **`update`** manager, tests + CI.
 
 > A simple prompt like *"a cute red mushroom"* yields a photoreal, textured 3D mushroom — geometry,
 > red cap with cream dots, textured stem — fully on AMD.
@@ -66,9 +74,9 @@ Every item below is implemented **and validated end-to-end** (no mockups, no pla
 
 ```mermaid
 flowchart LR
-    P([Prompt / Image]) --> SDXL[SDXL · ComfyUI<br/>text2img]
+    P([Prompt / Image / 1–4 views]) --> SDXL[SDXL · ComfyUI<br/>text2img]
     SDXL --> BG[Background removal<br/>rembg]
-    BG --> H3D[Hunyuan3D<br/>image → mesh]
+    BG --> H3D[Hunyuan3D<br/>image / multiview → mesh]
     H3D --> TX
 
     subgraph TX [Texturing · AMD/ZLUDA]
@@ -76,15 +84,18 @@ flowchart LR
       D[Delight] --> PT[Multiview paint] --> UP[ESRGAN upscale] --> BK[Bake · CPU/GPU raster] --> IN[Seam inpaint]
     end
 
-    TX --> OPT[Optimize<br/>Blender: cleanup · decimate]
+    TX --> AX[Auto texture adjust<br/>texfix]
+    AX --> OPT[Optimize<br/>Blender: cleanup · decimate · remesh]
     OPT --> EX[Export<br/>GLB · GLTF · OBJ · FBX · STL · USDZ · PLY]
 
     classDef hot fill:#FF6B35,stroke:#E8336D,color:#fff;
     class SDXL,H3D,EX hot;
 ```
 
-Each box is an **independent job**; progress streams to the UI in real time. A failure in a late stage
-never recomputes the expensive 3D generation.
+Each stage is reusable on its own — progress streams to the UI in real time, and you can run them
+individually (generate, then optimize, then export). The **one-click pipeline** (`FULL_PIPELINE`) chains
+the whole chain in a **single server-side job** that emits every artifact (preview, textured mesh,
+optimized mesh, exports) at once — fire-and-forget.
 
 ## Architecture
 
@@ -104,14 +115,15 @@ flowchart TB
     EV -->|comfyui queue| CMP
 
     subgraph DP [Compute plane · Python / GPU]
-      CMP[ComfyUI worker<br/>SDXL · Hunyuan3D · texture · rembg]
+      CMP[ComfyUI worker<br/>SDXL · Hunyuan3D · texture · rembg<br/>+ Blender finish for 1-click package]
     end
 ```
 
 **Design principle:** a clear split between the **control plane** (TypeScript: API, DB, queue) and the
 **compute plane** (Python GPU worker). The worker is stateless — reads inputs from storage, writes
-outputs back, and never touches the database (the API reflects queue events into Postgres). Mesh
-export/optimize run via Blender headless straight from the API.
+outputs back, and never touches the database (the API reflects queue events into Postgres). On-demand
+mesh optimize/export run via Blender headless straight from the API; the **one-click pipeline** lets the
+worker also finish the package (optimize + multi-format export, CPU) in the same job.
 
 See **[ARCHITECTURE.md](ARCHITECTURE.md)** and the operational **[RUNBOOK.md](RUNBOOK.md)**.
 
@@ -175,10 +187,10 @@ pnpm --filter @meshforge/web dev      # :3000  → http://localhost:3000
 
 ```
 meshforge/
-├── apps/             web (Next.js) · api (NestJS — generate, assets, export/optimize)
+├── apps/             web (Next.js) · api (NestJS — generate, assets, export/optimize, gallery)
 ├── services/
-│   ├── comfyui-service/   Python worker: SDXL · Hunyuan3D shape+texture · rembg
-│   └── blender-service/   headless export_mesh.py · process_mesh.py
+│   ├── comfyui-service/   Python worker: SDXL · Hunyuan3D shape+multiview+texture · rembg · 1-click finish
+│   └── blender-service/   headless export_mesh.py · process_mesh.py (cleanup/decimate/remesh/texfix)
 ├── packages/         shared-types · db (Prisma) · queue · storage
 ├── tools/
 │   ├── bootstrap/         ComfyUI/ZLUDA launchers · supervisor
@@ -201,11 +213,16 @@ meshforge/
 | 3D generation | Hunyuan3D Image→3D and Text→3D, live 3D viewer | ✅ |
 | **Texturing** | Premium PBR on AMD (paint + delight + upscale + inpaint), 2 backends | ✅ |
 | Quality | Tiers (geometry + texture), per-generation engine selector | ✅ |
-| Mesh processing | Blender headless cleanup + decimate | ✅ |
+| Mesh processing | Blender headless cleanup + decimate + watertight remesh (re-bake) | ✅ |
+| Texture finishing | Auto texture adjustment (`texfix`, hue-preserving) | ✅ |
 | Export | GLB / GLTF / OBJ / FBX / STL / USDZ / PLY | ✅ |
+| Gallery | Browse & import open-source CC0 models (multi-source) | ✅ |
+| Multi-image → 3D | Reconstruct from 1–4 views (multiview, no extra model) | ✅ |
+| Orchestration | One-click full pipeline (prompt → textured → optimized → exported) | ✅ |
+| Tooling | Safe `update` manager (rollback, dirty-tree guard) | ✅ |
 | Hardening | Tests, CI, structured logs, ComfyUI supervisor, RUNBOOK | ✅ |
-| Orchestration | One-click full pipeline (prompt → optimized export) | 🚧 |
-| Advanced | Quad retopology + UV bake · multi-image → 3D · open-source model gallery | ⬜ |
+| Advanced (open) | Pure quad retopology (QuadriFlow) · native GPU rasterizer (Backend B) | ⬜ |
+| Infra (future) | Auth · observability · distributed workers · Kubernetes | ⬜ |
 
 ## Acknowledgements
 

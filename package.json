@@ -31,7 +31,8 @@
     "infra:logs": "docker compose -f infra/docker-compose.yml logs -f",
     "tools:install": "pnpm --filter @meshforge/tool-manager start install",
     "tools:check": "pnpm --filter @meshforge/tool-manager start check",
-    "tools:verify": "pnpm --filter @meshforge/tool-manager start verify"
+    "tools:verify": "pnpm --filter @meshforge/tool-manager start verify",
+    "tools:update": "pnpm --filter @meshforge/tool-manager start update"
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",
