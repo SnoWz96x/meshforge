@@ -15,6 +15,7 @@ Powered end-to-end by free and open components — no proprietary clouds, no per
 [![Runs on AMD](https://img.shields.io/badge/runs%20on-AMD%20·%20ZLUDA-ED1C24.svg?style=flat-square)](#hardware)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6.svg?style=flat-square&logo=typescript&logoColor=white)](#tech-stack)
 [![Python](https://img.shields.io/badge/Python-3776AB.svg?style=flat-square&logo=python&logoColor=white)](#tech-stack)
+[![Contributions welcome](https://img.shields.io/badge/contributions-welcome-FF6B35.svg?style=flat-square)](CONTRIBUTING.md)
 
 [Overview](#overview) · [What works today](#what-works-today) · [Pipeline](#the-pipeline) · [Architecture](#architecture) · [Quickstart](#quickstart) · [Roadmap](#roadmap)
 
