@@ -63,10 +63,7 @@ type ViewId = (typeof VIEWS)[number]["id"];
 
 const isImageInputMode = (m: Mode) => m === "IMAGE_TO_IMAGE" || m === "IMAGE_TO_3D";
 const is3DMode = (m: Mode) =>
-  m === "IMAGE_TO_3D" ||
-  m === "MULTI_IMAGE_TO_3D" ||
-  m === "TEXT_TO_3D" ||
-  m === "FULL_PIPELINE";
+  m === "IMAGE_TO_3D" || m === "MULTI_IMAGE_TO_3D" || m === "TEXT_TO_3D" || m === "FULL_PIPELINE";
 
 const isTerminal = (s?: string) => s === "SUCCEEDED" || s === "FAILED" || s === "CANCELED";
 
@@ -296,8 +293,8 @@ export default function GeneratePage() {
                 <b className="text-content">Tudo num clique</b>, num job só: <b>SDXL</b> gera a
                 imagem → <b>Hunyuan3D</b> a malha → <b>textura PBR</b> (Backend A/CPU) →{" "}
                 <b>ajuste automático da textura</b> → malha <b>otimizada (~20k faces)</b> →{" "}
-                <b>exportes</b> nos formatos abaixo. Roda no servidor: pode fechar a aba que o pacote
-                continua. É o fluxo mais completo (e o mais demorado).
+                <b>exportes</b> nos formatos abaixo. Roda no servidor: pode fechar a aba que o
+                pacote continua. É o fluxo mais completo (e o mais demorado).
               </p>
               <Field label="Formatos no pacote">
                 <div className="flex flex-wrap gap-1.5">
@@ -784,7 +781,9 @@ function ViewSlot({
       }}
       className={cn(
         "flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed text-center transition-colors",
-        drag ? "border-accent bg-accent-soft" : "border-border-strong bg-surface-2 hover:border-accent",
+        drag
+          ? "border-accent bg-accent-soft"
+          : "border-border-strong bg-surface-2 hover:border-accent",
       )}
     >
       {uploading ? (
