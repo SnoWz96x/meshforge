@@ -279,8 +279,8 @@ export default function GeneratePage() {
           )}
           {mode === "IMAGE_TO_3D" && (
             <p className="-mt-2 text-[11px] leading-relaxed text-content-muted">
-              Gera a <b>malha 3D</b> (.glb) na sua GPU. A 1ª pode levar alguns minutos (compilação).
-              Textura ainda não — só geometria por enquanto.
+              Gera a <b>malha 3D</b> (.glb) na sua GPU a partir da imagem. A 1ª pode levar alguns
+              minutos (compilação). Marque <b>Texturizar</b> abaixo para cor PBR.
             </p>
           )}
           {mode === "TEXT_TO_3D" && (

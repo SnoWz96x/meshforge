@@ -31,9 +31,16 @@ a base. Detalhes e priorização em **[AUDIT.md](AUDIT.md)**.
 | **R3 — Fortalecimento** | ESLint/Prettier/CI, testes (Vitest+pytest), logger estruturado (jobId), RUNBOOK, otimização de disco | ✅ |
 
 ## Próximos candidatos imediatos
-1. **Orquestração 1-clique** — prompt → 3D → textura → otimizar → exportar, num fluxo só.
+1. ~~**Orquestração 1-clique**~~ ✅ — `FULL_PIPELINE`: prompt → 3D → textura → ajuste auto
+   → otimizar → exportar, num job só (tela Gerar → "Pacote completo").
 2. ~~Galeria open-source~~ ✅ — explorar/importar modelos 3D CC0 (tela Galeria).
 3. ~~**Avançado** — retopo quad + UV bake; multi-imagem → 3D~~ ✅ — remesh watertight
    com re-bake EMIT **e** multi-imagem→3D (1–4 vistas, `Hy3DGenerateMeshMultiView`) entregues.
+4. ~~**Ajuste auto de textura** + **update manager**~~ ✅ — `texfix` (hue-preserving) e
+   `meshforge-tools update` (seguro, com rollback) entregues.
+
+Restam só itens de risco/nicho ou infra adiável: retopo quad *puro* (QuadriFlow instável),
+Backend B (rasterizador GPU — mais lento via ZLUDA), validação do bootstrap em máquina
+limpa, e infra futura (auth, observabilidade, distribuído, k8s).
 
 Ver [FUTURE_AUTOMATION_ROADMAP.md](FUTURE_AUTOMATION_ROADMAP.md) para automações futuras (não no escopo atual).
