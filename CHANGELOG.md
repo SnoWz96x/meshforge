@@ -4,6 +4,25 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Added — Multi-imagem → 3D (Hunyuan3D multiview, sem download extra)
+- **Novo tipo de geração `MULTI_IMAGE_TO_3D`**: o usuário envia de **1 a 4 vistas**
+  (frente · esquerda · direita · trás) do mesmo objeto e o **`Hy3DGenerateMeshMultiView`**
+  reconstrói a malha combinando as vistas. Quanto mais vistas, mais fiel.
+- **Reusa o MESMO checkpoint do Imagem→3D** (`HY3DMODEL`): confirmado que o nó multiview
+  aceita o `pipeline` do `Hy3DModelLoader` base — **nenhum modelo "2mv" a baixar**.
+- Pipeline: API resolve `inputAssetIds`+`params.views` → worker `HUNYUAN3D_MULTIVIEW`
+  (remove fundo de cada vista, sobe ao ComfyUI, monta o grafo multiview) →
+  decode/postprocess/export → asset `MESH_RAW` → viewer 3D. Textura opcional reusa a
+  vista frontal como referência.
+- UI: aba **"Multi-imagem → 3D"** na tela Gerar com **grade 2×2** de slots (todos
+  opcionais; ≥1 basta), reusando os controles de qualidade/textura/motor já existentes.
+- Migração Prisma `add_multiview_to_3d` (enum `GenerationType.MULTI_IMAGE_TO_3D` +
+  `JobStage.HUNYUAN3D_MULTIVIEW`). Builder de grafo `build_multiview_to_3d` + util
+  `render_views.py` (Blender headless, 4 vistas canônicas) para testes/validação.
+- **Validado**: 4 vistas renderizadas de uma malha → `Hy3DGenerateMeshMultiView` na
+  RX 7800 XT/ZLUDA reconstruiu a malha fiel ao objeto (corpo + alça da caneca). Cobertura:
+  +4 testes pytest do builder; typecheck/lint limpos.
+
 ### Added — Retopologia (remesh) com textura preservada (Blender headless)
 - **Remesh de topologia limpa**: nova op `remesh` (`process_mesh.py`) gera uma malha
   **watertight quad-dominante** via **voxel remesh** (robusto em malhas de IA) + UV novo

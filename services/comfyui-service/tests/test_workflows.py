@@ -10,7 +10,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from workflows import build_img2img, build_txt2img  # noqa: E402
-from hunyuan3d_workflows import DEFAULT_DIT, build_image_to_3d  # noqa: E402
+from hunyuan3d_workflows import (  # noqa: E402
+    DEFAULT_DIT,
+    build_image_to_3d,
+    build_multiview_to_3d,
+)
 
 
 def _class_types(graph: dict) -> set[str]:
@@ -94,3 +98,43 @@ def test_image_to_3d_overrides():
     assert g["3"]["inputs"]["steps"] == 10
     assert g["5"]["inputs"]["max_facenum"] == 8000
     assert g["4"]["inputs"]["octree_resolution"] == 128
+
+
+def test_multiview_quatro_vistas_ligadas():
+    g = build_multiview_to_3d(
+        {"front": "f.png", "left": "l.png", "right": "r.png", "back": "b.png"}, {}
+    )
+    assert g["3"]["class_type"] == "Hy3DGenerateMeshMultiView"
+    # cada vista carrega sua imagem e liga ao nó multiview
+    for v in ("front", "left", "right", "back"):
+        assert g[f"L_{v}"]["inputs"]["image"] == f"{v[0]}.png"
+        assert g["3"]["inputs"][v] == [f"L_{v}", 0]
+    # mesma cadeia de decode/postprocess/export do single-view
+    assert g["4"]["inputs"]["latents"] == ["3", 0]
+    assert g["4"]["inputs"]["vae"] == ["2", 0 + 1]
+    assert g["6"]["inputs"]["file_format"] == "glb"
+
+
+def test_multiview_subconjunto_de_vistas():
+    g = build_multiview_to_3d({"front": "f.png", "back": "b.png"}, {})
+    assert g["3"]["inputs"]["front"] == ["L_front", 0]
+    assert g["3"]["inputs"]["back"] == ["L_back", 0]
+    assert "left" not in g["3"]["inputs"]
+    assert "right" not in g["3"]["inputs"]
+    assert "L_left" not in g and "L_right" not in g
+
+
+def test_multiview_sem_vistas_falha():
+    import pytest
+
+    with pytest.raises(ValueError):
+        build_multiview_to_3d({}, {})
+
+
+def test_multiview_overrides():
+    g = build_multiview_to_3d(
+        {"front": "f.png"}, {"steps": 12, "max_facenum": 9000, "octree_resolution": 192}
+    )
+    assert g["3"]["inputs"]["steps"] == 12
+    assert g["5"]["inputs"]["max_facenum"] == 9000
+    assert g["4"]["inputs"]["octree_resolution"] == 192

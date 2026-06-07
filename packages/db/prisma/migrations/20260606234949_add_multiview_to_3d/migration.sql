@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "GenerationType" ADD VALUE 'MULTI_IMAGE_TO_3D';
+
+-- AlterEnum
+ALTER TYPE "JobStage" ADD VALUE 'HUNYUAN3D_MULTIVIEW';

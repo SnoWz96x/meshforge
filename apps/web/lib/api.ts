@@ -72,6 +72,7 @@ export const api = {
     prompt?: string;
     negativePrompt?: string;
     inputAssetId?: string;
+    inputAssetIds?: string[];
     params?: Record<string, unknown>;
   }) => req<Generation>("/generations", { method: "POST", body: JSON.stringify(input) }),
   getGeneration: (id: string) => req<Generation>(`/generations/${id}`),

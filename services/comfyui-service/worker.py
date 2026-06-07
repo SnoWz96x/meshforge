@@ -23,7 +23,7 @@ from bullmq import Worker
 
 from comfyui_client import ComfyUIClient
 from workflows import build_img2img, build_txt2img
-from hunyuan3d_workflows import build_image_to_3d
+from hunyuan3d_workflows import build_image_to_3d, build_multiview_to_3d
 
 for _s in (sys.stdout, sys.stderr):
     try:
@@ -291,6 +291,56 @@ def run_job(payload: dict) -> dict:
         else:
             uri, size = _save_mesh(payload["projectId"], glb)
             mesh_meta = {"source": "hunyuan3d-2"}
+        _publish_progress(payload, 100, status="SUCCEEDED")
+        return {
+            "jobId": payload["jobId"],
+            "status": "SUCCEEDED",
+            "outputs": [{
+                "kind": "MESH_RAW",
+                "format": "glb",
+                "storageUri": uri,
+                "sizeBytes": size,
+                "meta": mesh_meta,
+            }],
+        }
+
+    # ---- Geração 3D multi-imagem (Hunyuan3D multiview) ----
+    if stage == "HUNYUAN3D_MULTIVIEW":
+        srcs = payload.get("inputs") or []
+        if not srcs:
+            raise ValueError("multi-imagem→3D sem imagens de entrada")
+        views = params.get("views") or ["front", "left", "right", "back"][: len(srcs)]
+        if len(views) != len(srcs):
+            raise ValueError("número de vistas difere do número de imagens")
+        # Recorta o fundo de cada vista e sobe ao ComfyUI.
+        view_images: dict[str, str] = {}
+        front_name = None
+        for view, src in zip(views, srcs):
+            src_key = src.split("local:", 1)[-1]
+            src_bytes = _storage_path(src_key).read_bytes()
+            img = _remove_bg(src_bytes) if params.get("remove_bg", True) else src_bytes
+            name = client.upload_image(img, f"{uuid.uuid4().hex}.png")
+            view_images[view] = name
+            if view == "front" or front_name is None:
+                front_name = name
+        want_tex = bool(params.get("texture"))
+        shape_cap = 50 if want_tex else 95
+        graph = build_multiview_to_3d(view_images, params)
+        before = set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb"))
+        prompt_id = client.submit(graph)
+        _publish_progress(payload, 10)
+        client.wait(prompt_id, on_progress=lambda p: _publish_progress(payload, max(10, min(shape_cap, p))))
+        created = sorted((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb")) and (
+            set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb")) - before
+        )
+        glb = max(created, key=lambda p: p.stat().st_mtime) if created else _newest_glb()
+
+        if want_tex and front_name:
+            uri, size = _texturize(client, payload, glb, front_name, params, shape_cap + 2, 100)
+            mesh_meta = {"source": "hunyuan3d-2-multiview", "views": list(view_images), "textured": True}
+        else:
+            uri, size = _save_mesh(payload["projectId"], glb)
+            mesh_meta = {"source": "hunyuan3d-2-multiview", "views": list(view_images)}
         _publish_progress(payload, 100, status="SUCCEEDED")
         return {
             "jobId": payload["jobId"],

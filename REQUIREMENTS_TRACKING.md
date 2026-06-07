@@ -19,7 +19,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | :-- | :-- | :-- |
 | **ComfyUI** | ✅ | Rodando em `C:\ComfyUI-Zluda` :8188 via ZLUDA; gera imagens reais |
 | **Stable Diffusion XL** | ✅ | text2img validado (imagem real gerada na RX 7800 XT) |
-| **Hunyuan3D 2.0** | ✅ (shape) | **Image→3D integrado no produto E2E**: API `IMAGE_TO_3D` → worker `HUNYUAN3D_SHAPE` → ComfyUI/ZLUDA → `.glb` no storage (asset MESH_RAW) → **viewer 3D na UI**. ~78s com kernels em cache. **Textura PBR funcionando na AMD** (Backend A: rasterizador CPU + pintura GPU/ZLUDA) — opção nos fluxos 3D. |
+| **Hunyuan3D 2.0** | ✅ (shape) | **Image→3D integrado no produto E2E**: API `IMAGE_TO_3D` → worker `HUNYUAN3D_SHAPE` → ComfyUI/ZLUDA → `.glb` no storage (asset MESH_RAW) → **viewer 3D na UI**. ~78s com kernels em cache. **Textura PBR funcionando na AMD** (Backend A: rasterizador CPU + pintura GPU/ZLUDA) — opção nos fluxos 3D. **Multi-imagem→3D** (`Hy3DGenerateMeshMultiView`) também integrado, reusando o mesmo checkpoint. |
 | **Blender** | ✅ (headless) | 4.2.3 — **automação headless ativa**: exportação multi-formato + limpeza/decimate de malha (`services/blender-service/`). Retopo quad/bake ainda não |
 
 ## 2. Funcionalidades de geração
@@ -29,6 +29,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | Text-to-Image | ✅ | E2E validado (API→fila→worker→ComfyUI→storage→DB) |
 | Image-to-Image | ✅ | Validado E2E (upload → SDXL_IMG2IMG na GPU → variação gerada, via UI e API) |
 | Image-to-3D (shape) | ✅ | **Integrado E2E** — UI Imagem→3D (drag&drop) → malha .glb na GPU → viewer 3D. Validado via API e navegador |
+| Multi-imagem-to-3D (multiview) | ✅ | **Integrado E2E** — UI "Multi-imagem → 3D" (1–4 vistas: frente/esq/dir/trás) → `Hy3DGenerateMeshMultiView` reconstrói a malha combinando as vistas. **Usa o MESMO modelo base do Imagem→3D (sem download extra).** Validado: 4 vistas → malha .glb fiel ao objeto |
 | Text-to-3D | ✅ | **Encadeado E2E** — `TEXT_TO_3D` roda SDXL txt2img → Hunyuan3D shape num job só (2 saídas: imagem + malha), UI "Texto → 3D". Validado prompt→malha .glb na GPU |
 | Retopologia automática | ✅ | Blender headless: decimate (reduz preservando UV) + **remesh watertight** (voxel) com **re-bake da textura** (EMIT) na nova topologia. (QuadriFlow quad-puro é instável nessas malhas — voxel é o confiável.) |
 | Correção automática de malha | ✅ | Blender headless: solda vértices, remove soltos, normais, fecha buracos (`process_mesh.py`, op `cleanup`) |

@@ -20,6 +20,7 @@ const STAGE_FOR_TYPE: Partial<Record<GenerationType, JobStage>> = {
   [GenerationType.TEXT_TO_IMAGE]: JobStage.SDXL_TXT2IMG,
   [GenerationType.IMAGE_TO_IMAGE]: JobStage.SDXL_IMG2IMG,
   [GenerationType.IMAGE_TO_3D]: JobStage.HUNYUAN3D_SHAPE,
+  [GenerationType.MULTI_IMAGE_TO_3D]: JobStage.HUNYUAN3D_MULTIVIEW,
   // Pipeline encadeado num job só: txt2img -> shape (não exige imagem de entrada).
   [GenerationType.TEXT_TO_3D]: JobStage.TEXT_TO_3D,
 };
@@ -29,6 +30,9 @@ const NEEDS_INPUT_IMAGE: GenerationType[] = [
   GenerationType.IMAGE_TO_IMAGE,
   GenerationType.IMAGE_TO_3D,
 ];
+
+// Ordem canônica das vistas do multiview (paralela a inputAssetIds).
+const MULTIVIEW_VIEWS = ["front", "left", "right", "back"] as const;
 
 @Injectable()
 export class GenerationsService {
@@ -45,9 +49,36 @@ export class GenerationsService {
       );
     }
 
-    // Resolve o asset de entrada (img2img / image→3D).
+    // Resolve o(s) asset(s) de entrada (img2img / image→3D / multi-imagem→3D).
     const inputs: string[] = [];
-    if (NEEDS_INPUT_IMAGE.includes(input.type)) {
+    let viewOrder: string[] | undefined;
+    if (input.type === GenerationType.MULTI_IMAGE_TO_3D) {
+      const ids = input.inputAssetIds ?? [];
+      if (!ids.length) {
+        throw new BadRequestException(
+          "MULTI_IMAGE_TO_3D requer inputAssetIds (1 a 4 imagens: front/left/right/back).",
+        );
+      }
+      if (ids.length > MULTIVIEW_VIEWS.length) {
+        throw new BadRequestException(`No máximo ${MULTIVIEW_VIEWS.length} vistas.`);
+      }
+      // Vistas explícitas via params.views (paralelas a ids) ou ordem canônica.
+      const declared = Array.isArray(input.params?.views)
+        ? (input.params.views as string[])
+        : MULTIVIEW_VIEWS.slice(0, ids.length);
+      viewOrder = [];
+      for (let i = 0; i < ids.length; i++) {
+        const assetId = ids[i] as string;
+        const view = declared[i] as string;
+        if (!MULTIVIEW_VIEWS.includes(view as (typeof MULTIVIEW_VIEWS)[number])) {
+          throw new BadRequestException(`Vista inválida: ${view}`);
+        }
+        const asset = await this.prisma.asset.findUnique({ where: { id: assetId } });
+        if (!asset) throw new NotFoundException(`Asset ${assetId} não encontrado`);
+        inputs.push(asset.storageUri);
+        viewOrder.push(view);
+      }
+    } else if (NEEDS_INPUT_IMAGE.includes(input.type)) {
       if (!input.inputAssetId) {
         throw new BadRequestException(`${input.type} requer inputAssetId (imagem de entrada).`);
       }
@@ -86,6 +117,8 @@ export class GenerationsService {
         prompt: input.prompt ?? "",
         negativePrompt: input.negativePrompt ?? "",
         ...input.params,
+        // Vistas paralelas a `inputs` (multi-imagem→3D): worker mapeia view→imagem.
+        ...(viewOrder ? { views: viewOrder } : {}),
       },
     };
     // Enfileira; se falhar (Redis fora do ar), marca FAILED para não deixar

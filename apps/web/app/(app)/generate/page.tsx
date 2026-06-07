@@ -9,6 +9,7 @@ import {
   Wand2,
   Box,
   Boxes,
+  Images,
   Type,
   UploadCloud,
   X,
@@ -30,15 +31,27 @@ const SIZES = [
   { label: "768 × 1024", w: 768, h: 1024 },
 ];
 
-type Mode = "TEXT_TO_IMAGE" | "IMAGE_TO_IMAGE" | "IMAGE_TO_3D" | "TEXT_TO_3D";
+type Mode = "TEXT_TO_IMAGE" | "IMAGE_TO_IMAGE" | "IMAGE_TO_3D" | "MULTI_IMAGE_TO_3D" | "TEXT_TO_3D";
 const MODES: { id: Mode; label: string; icon: typeof Type; ready: boolean }[] = [
   { id: "TEXT_TO_IMAGE", label: "Texto → Imagem", icon: Type, ready: true },
   { id: "IMAGE_TO_IMAGE", label: "Imagem → Imagem", icon: Wand2, ready: true },
   { id: "IMAGE_TO_3D", label: "Imagem → 3D", icon: Box, ready: true },
+  { id: "MULTI_IMAGE_TO_3D", label: "Multi-imagem → 3D", icon: Images, ready: true },
   { id: "TEXT_TO_3D", label: "Texto → 3D", icon: Boxes, ready: true },
 ];
 
+// Vistas do multiview (ordem canônica enviada à API).
+const VIEWS = [
+  { id: "front", label: "Frente" },
+  { id: "left", label: "Esquerda" },
+  { id: "right", label: "Direita" },
+  { id: "back", label: "Trás" },
+] as const;
+type ViewId = (typeof VIEWS)[number]["id"];
+
 const isImageInputMode = (m: Mode) => m === "IMAGE_TO_IMAGE" || m === "IMAGE_TO_3D";
+const is3DMode = (m: Mode) =>
+  m === "IMAGE_TO_3D" || m === "MULTI_IMAGE_TO_3D" || m === "TEXT_TO_3D";
 
 const isTerminal = (s?: string) => s === "SUCCEEDED" || s === "FAILED" || s === "CANCELED";
 
@@ -62,12 +75,30 @@ export default function GeneratePage() {
   const [showEngine, setShowEngine] = useState(false);
   const [quality, setQuality] = useState<"balanced" | "high" | "max">("high");
   const [input, setInput] = useState<Asset | null>(null);
+  const [views, setViews] = useState<Record<ViewId, Asset | null>>({
+    front: null,
+    left: null,
+    right: null,
+    back: null,
+  });
+  const [uploadingView, setUploadingView] = useState<ViewId | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const upload = useMutation({
     mutationFn: async (file: File) => uploadImage(await ensureProject(), file),
     onSuccess: (a) => setInput(a),
     onError: (e) => toast.error(`Falha no upload: ${(e as Error).message}`),
+  });
+
+  const uploadView = useMutation({
+    mutationFn: async ({ view, file }: { view: ViewId; file: File }) => {
+      setUploadingView(view);
+      const a = await uploadImage(await ensureProject(), file);
+      return { view, asset: a };
+    },
+    onSuccess: ({ view, asset }) => setViews((v) => ({ ...v, [view]: asset })),
+    onError: (e) => toast.error(`Falha no upload: ${(e as Error).message}`),
+    onSettled: () => setUploadingView(null),
   });
 
   const gen = useMutation({
@@ -79,6 +110,21 @@ export default function GeneratePage() {
           type: "IMAGE_TO_3D",
           inputAssetId: input!.id,
           params: { steps, texture, quality, texture_backend: textureBackend },
+        });
+      }
+      if (mode === "MULTI_IMAGE_TO_3D") {
+        const present = VIEWS.filter((v) => views[v.id]);
+        return api.createGeneration({
+          projectId,
+          type: "MULTI_IMAGE_TO_3D",
+          inputAssetIds: present.map((v) => views[v.id]!.id),
+          params: {
+            views: present.map((v) => v.id),
+            steps,
+            texture,
+            quality,
+            texture_backend: textureBackend,
+          },
         });
       }
       if (mode === "IMAGE_TO_IMAGE") {
@@ -156,8 +202,11 @@ export default function GeneratePage() {
   }, [active, qc]);
 
   const busy = gen.isPending || (!!active && !isTerminal(active.status));
-  const needsImage = isImageInputMode(mode) && !input;
-  const canGenerate = !busy && !needsImage && (mode === "IMAGE_TO_3D" || !!prompt.trim());
+  const viewCount = VIEWS.filter((v) => views[v.id]).length;
+  const needsImage =
+    (isImageInputMode(mode) && !input) || (mode === "MULTI_IMAGE_TO_3D" && viewCount === 0);
+  const noPromptNeeded = mode === "IMAGE_TO_3D" || mode === "MULTI_IMAGE_TO_3D";
+  const canGenerate = !busy && !needsImage && (noPromptNeeded || !!prompt.trim());
 
   return (
     <>
@@ -174,6 +223,21 @@ export default function GeneratePage() {
               onClear={() => setInput(null)}
             />
           )}
+          {mode === "MULTI_IMAGE_TO_3D" && (
+            <>
+              <MultiViewGrid
+                views={views}
+                uploadingView={uploadingView}
+                onFile={(view, file) => uploadView.mutate({ view, file })}
+                onClear={(view) => setViews((v) => ({ ...v, [view]: null }))}
+              />
+              <p className="-mt-2 text-[11px] leading-relaxed text-content-muted">
+                Envie de <b>1 a 4 vistas</b> (frente, esquerda, direita, trás) do mesmo objeto. O{" "}
+                <b>Hunyuan3D multiview</b> reconstrói a malha combinando as vistas — quanto mais
+                vistas, mais fiel. Usa o mesmo modelo do Imagem→3D (sem download extra).
+              </p>
+            </>
+          )}
           {mode === "IMAGE_TO_3D" && (
             <p className="-mt-2 text-[11px] leading-relaxed text-content-muted">
               Gera a <b>malha 3D</b> (.glb) na sua GPU. A 1ª pode levar alguns minutos (compilação).
@@ -187,7 +251,7 @@ export default function GeneratePage() {
               modelos).
             </p>
           )}
-          {(mode === "IMAGE_TO_3D" || mode === "TEXT_TO_3D") && (
+          {is3DMode(mode) && (
             <Field label="Qualidade 3D">
               <div className="grid grid-cols-3 gap-1.5">
                 {(
@@ -213,7 +277,7 @@ export default function GeneratePage() {
               </div>
             </Field>
           )}
-          {(mode === "IMAGE_TO_3D" || mode === "TEXT_TO_3D") && (
+          {is3DMode(mode) && (
             <label className="-mt-1 flex cursor-pointer items-start gap-2.5 rounded-sm border border-border bg-surface-2 p-3">
               <input
                 type="checkbox"
@@ -232,7 +296,7 @@ export default function GeneratePage() {
               </span>
             </label>
           )}
-          {texture && (mode === "IMAGE_TO_3D" || mode === "TEXT_TO_3D") && (
+          {texture && is3DMode(mode) && (
             <button
               onClick={() => setShowEngine(true)}
               className="-mt-2 flex items-center justify-between rounded-sm border border-border bg-surface-2 px-3 py-2 text-left transition-colors hover:border-accent"
@@ -248,7 +312,7 @@ export default function GeneratePage() {
             </button>
           )}
 
-          {mode !== "IMAGE_TO_3D" && (
+          {mode !== "IMAGE_TO_3D" && mode !== "MULTI_IMAGE_TO_3D" && (
             <>
               <Field label="Prompt">
                 <textarea
@@ -319,12 +383,16 @@ export default function GeneratePage() {
             {busy
               ? "Gerando…"
               : needsImage
-                ? "Envie uma imagem"
+                ? mode === "MULTI_IMAGE_TO_3D"
+                  ? "Envie ao menos 1 vista"
+                  : "Envie uma imagem"
                 : mode === "IMAGE_TO_3D"
                   ? "Gerar malha 3D"
-                  : mode === "TEXT_TO_3D"
-                    ? "Gerar 3D do texto"
-                    : "Gerar imagem"}
+                  : mode === "MULTI_IMAGE_TO_3D"
+                    ? `Gerar 3D de ${viewCount} vista${viewCount > 1 ? "s" : ""}`
+                    : mode === "TEXT_TO_3D"
+                      ? "Gerar 3D do texto"
+                      : "Gerar imagem"}
           </button>
           {busy && activeId && (
             <button
@@ -542,6 +610,109 @@ function Dropzone({
       <span className="text-[12px] text-content-secondary">
         {uploading ? "Enviando…" : "Arraste uma imagem ou clique"}
       </span>
+      <input
+        ref={ref}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFile(f);
+        }}
+      />
+    </div>
+  );
+}
+
+// Grade 2×2 de slots para as 4 vistas do multiview (todas opcionais; ≥1 basta).
+function MultiViewGrid({
+  views,
+  uploadingView,
+  onFile,
+  onClear,
+}: {
+  views: Record<ViewId, Asset | null>;
+  uploadingView: ViewId | null;
+  onFile: (view: ViewId, file: File) => void;
+  onClear: (view: ViewId) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {VIEWS.map((v) => (
+        <ViewSlot
+          key={v.id}
+          label={v.label}
+          asset={views[v.id]}
+          uploading={uploadingView === v.id}
+          onFile={(f) => onFile(v.id, f)}
+          onClear={() => onClear(v.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ViewSlot({
+  label,
+  asset,
+  uploading,
+  onFile,
+  onClear,
+}: {
+  label: string;
+  asset: Asset | null;
+  uploading: boolean;
+  onFile: (f: File) => void;
+  onClear: () => void;
+}) {
+  const [drag, setDrag] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+
+  if (asset) {
+    return (
+      <div className="relative aspect-square overflow-hidden rounded-sm border border-border">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={assetUrl(asset.id)} alt={label} className="h-full w-full object-cover" />
+        <span className="absolute left-1.5 top-1.5 rounded-sm bg-black/60 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/90 backdrop-blur">
+          {label}
+        </span>
+        <button
+          onClick={onClear}
+          className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-white/90 backdrop-blur transition-colors hover:bg-black/80"
+          aria-label={`Remover ${label}`}
+        >
+          <X size={11} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={() => ref.current?.click()}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDrag(true);
+      }}
+      onDragLeave={() => setDrag(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDrag(false);
+        const f = e.dataTransfer.files?.[0];
+        if (f) onFile(f);
+      }}
+      className={cn(
+        "flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed text-center transition-colors",
+        drag ? "border-accent bg-accent-soft" : "border-border-strong bg-surface-2 hover:border-accent",
+      )}
+    >
+      {uploading ? (
+        <Loader2 size={16} className="animate-spin text-accent" />
+      ) : (
+        <UploadCloud size={16} className="text-content-muted" />
+      )}
+      <span className="text-[11px] font-medium text-content-secondary">{label}</span>
+      <span className="text-[9px] text-content-muted">{uploading ? "Enviando…" : "opcional"}</span>
       <input
         ref={ref}
         type="file"

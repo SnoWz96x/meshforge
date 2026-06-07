@@ -64,6 +64,8 @@ export const createGenerationSchema = z.object({
   prompt: z.string().optional(),
   negativePrompt: z.string().optional(),
   inputAssetId: z.string().optional(),
+  // Múltiplas imagens de entrada (multi-imagem→3D): front/left/right/back, em ordem.
+  inputAssetIds: z.array(z.string()).optional(),
   exportFormats: z.array(z.nativeEnum(ExportFormat)).optional(),
   params: z.record(z.unknown()).default({}),
 });
