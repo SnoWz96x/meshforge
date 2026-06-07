@@ -11,7 +11,7 @@ Estado real por fase. Datas relativas; foco em "pronto quando validado", sem pla
 | **3 — Geração 3D** | Worker Hunyuan3D (img→3D, **multi-imagem→3D**, text→3D), viewer 3D | ✅ |
 | **3.1 — Textura premium** | Paint + **delight** + **ESRGAN upscale** + inpaint na AMD/ZLUDA; níveis de qualidade; 2 backends de rasterização (CPU/GPU) com seletor | ✅ |
 | **4 — Blender Pipeline** | Headless: **cleanup + decimate** ✅. Retopo quad / UV bake ⬜ | 🚧 |
-| **5 — Orquestração** | Encadeamento Texto→3D num job ✅. Pipeline 1-clique completo (→ otimizar → exportar) | 🚧 |
+| **5 — Orquestração** | Encadeamento Texto→3D ✅ **e pipeline 1-clique completo** (`FULL_PIPELINE`: gerar → texturizar → otimizar → exportar num job só) ✅ | ✅ |
 | **6 — Export Manager** | GLB/GLTF/OBJ/FBX/STL/USDZ/PLY via Blender headless | ✅ |
 | **7 — UI Premium** | Shell premium, gerar, biblioteca (malhas 3D), exportar, ⌘K, dark/light, drag&drop, seletor de motor | ✅ |
 | **8 — Hardening & Docs** | Testes + CI, logger estruturado, supervisor ComfyUI, RUNBOOK ✅. Auth/observabilidade/k8s ⬜ | 🚧 |

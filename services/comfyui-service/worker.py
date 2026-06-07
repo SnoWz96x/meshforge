@@ -10,12 +10,16 @@ o resultado pela fila.
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 import logging
 import os
 import shutil
+import subprocess
 import sys
+import tempfile
 import uuid
+import zipfile
 from pathlib import Path
 
 import redis as redis_sync
@@ -50,6 +54,21 @@ STORAGE_ROOT = Path(os.environ.get("STORAGE_LOCAL_PATH", "./storage"))
 # Diretório de output do ComfyUI (onde o Hy3DExportMesh salva o .glb).
 COMFYUI_OUTPUT_DIR = Path(os.environ.get("COMFYUI_OUTPUT_DIR", r"C:/ComfyUI-Zluda/output"))
 PROGRESS_CHANNEL = "meshforge:progress"
+
+# Blender headless — finalização do pacote (otimizar + exportar) no mesmo job.
+# Reusa os MESMOS scripts validados que a API usa (services/blender-service).
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+BLENDER_PATH = os.environ.get("BLENDER_PATH") or str(
+    _REPO_ROOT / "auxiliary-tools" / "blender" / "blender-4.2.3-windows-x64" / "blender.exe"
+)
+_BLENDER_SERVICE = _REPO_ROOT / "services" / "blender-service"
+BLENDER_PROCESS_SCRIPT = os.environ.get("BLENDER_PROCESS_SCRIPT") or str(_BLENDER_SERVICE / "process_mesh.py")
+BLENDER_EXPORT_SCRIPT = os.environ.get("BLENDER_EXPORT_SCRIPT") or str(_BLENDER_SERVICE / "export_mesh.py")
+# Formatos cujo export gera arquivos-satélite (viram .zip).
+_MULTIFILE_FORMATS = {"obj", "gltf"}
+# Pacote "completo" padrão (Texto→3D 1-clique): exporta além do .glb principal.
+DEFAULT_PACKAGE_FORMATS = ["fbx", "obj", "stl", "usdz", "gltf"]
+DEFAULT_PACKAGE_FACES = 20000
 
 _rds = redis_sync.from_url(REDIS_URL)
 
@@ -89,6 +108,108 @@ def _save_mesh(project_id: str, src_glb: Path) -> tuple[str, int]:
     path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(src_glb, path)
     return f"local:{key}", path.stat().st_size
+
+
+def _save_bytes(project_id: str, data: bytes, ext: str) -> tuple[str, int]:
+    """Salva bytes arbitrários (export/zip) no storage e devolve (storageUri, sizeBytes)."""
+    asset_id = uuid.uuid4().hex
+    key = f"projects/{project_id}/{asset_id}.{ext}"
+    path = _storage_path(key)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return f"local:{key}", len(data)
+
+
+def _local_from_uri(uri: str) -> Path:
+    """Caminho local de um asset salvo (uri 'local:projects/...')."""
+    return _storage_path(uri.split("local:", 1)[-1])
+
+
+def _run_blender(args: list[str], timeout: int = 300) -> None:
+    res = subprocess.run(
+        [BLENDER_PATH, "--background", "--factory-startup", "--python", *args],
+        capture_output=True, timeout=timeout,
+    )
+    if res.returncode != 0:
+        tail = res.stderr.decode("utf-8", "ignore")[-600:]
+        raise RuntimeError(f"Blender falhou (rc={res.returncode}): {tail}")
+
+
+def _blender_decimate(src_glb: Path, faces: int) -> bytes:
+    """Otimiza a malha (.glb) preservando UV/textura. Devolve os bytes do novo .glb."""
+    d = Path(tempfile.mkdtemp(prefix="mf-opt-"))
+    try:
+        out = d / "out.glb"
+        _run_blender([BLENDER_PROCESS_SCRIPT, "--", str(src_glb), str(out), "decimate", str(faces)])
+        return out.read_bytes()
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
+def _blender_export(src_glb: Path, fmt: str) -> tuple[bytes, str]:
+    """Exporta a malha (.glb) para `fmt` via Blender. Multi-arquivo (obj/gltf) → .zip.
+    Devolve (bytes, formato_salvo)."""
+    d = Path(tempfile.mkdtemp(prefix="mf-exp-"))
+    try:
+        out = d / f"model.{fmt}"
+        _run_blender([BLENDER_EXPORT_SCRIPT, "--", str(src_glb), str(out), fmt])
+        files = [f for f in d.iterdir() if f.is_file()]
+        if not files:
+            raise RuntimeError(f"export {fmt} não gerou arquivos")
+        if fmt in _MULTIFILE_FORMATS and len(files) > 1:
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+                for f in files:
+                    z.write(f, f.name)
+            return buf.getvalue(), "zip"
+        return out.read_bytes(), fmt
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
+def _finish_package(payload: dict, mesh_uri: str, params: dict,
+                    prog_start: int = 86, prog_end: int = 99) -> list[dict]:
+    """Finaliza o pacote (mesmo job): malha otimizada + exportes multi-formato.
+
+    Roda Blender headless (CPU — sem GPU/ZLUDA) sobre a malha texturizada. Devolve
+    a lista de outputs extras (que a API persiste como assets). Robusto: falha de um
+    formato não derruba o pacote inteiro (loga e segue)."""
+    src = _local_from_uri(mesh_uri)
+    do_opt = bool(params.get("optimize", True))
+    faces = int(params.get("optimize_faces", DEFAULT_PACKAGE_FACES))
+    formats = params.get("export_formats")
+    if formats is None:
+        formats = DEFAULT_PACKAGE_FORMATS
+    outs: list[dict] = []
+    total = (1 if do_opt else 0) + len(formats)
+    done = 0
+
+    def bump() -> None:
+        nonlocal done
+        done += 1
+        if total:
+            _publish_progress(payload, min(prog_end, prog_start + int(done * (prog_end - prog_start) / total)))
+
+    if do_opt:
+        try:
+            data = _blender_decimate(src, faces)
+            uri, size = _save_bytes(payload["projectId"], data, "glb")
+            outs.append({"kind": "MESH_RETOPO", "format": "glb", "storageUri": uri, "sizeBytes": size,
+                         "meta": {"source": "full-pipeline", "op": "decimate", "targetFaces": faces}})
+        except Exception as e:  # noqa: BLE001
+            log(logging.WARNING, payload.get("jobId"), payload.get("stage"), f"otimizar falhou: {e!r}")
+        bump()
+
+    for fmt in formats:
+        try:
+            data, outfmt = _blender_export(src, fmt)
+            uri, size = _save_bytes(payload["projectId"], data, outfmt)
+            outs.append({"kind": "EXPORT", "format": outfmt, "storageUri": uri, "sizeBytes": size,
+                         "meta": {"source": "full-pipeline", "exported": fmt}})
+        except Exception as e:  # noqa: BLE001
+            log(logging.WARNING, payload.get("jobId"), payload.get("stage"), f"export {fmt} falhou: {e!r}")
+        bump()
+    return outs
 
 
 def _newest_glb(pattern: str = "*.glb") -> Path:
@@ -243,24 +364,25 @@ def run_job(payload: dict) -> dict:
         created = set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb")) - before
         glb = max(created, key=lambda p: p.stat().st_mtime) if created else _newest_glb()
 
+        pkg = bool(params.get("package"))
+        tex_end = 84 if pkg else 100
         if want_tex:
-            mesh_uri, mesh_size = _texturize(client, payload, glb, input_name, params, shape_cap + 1, 100)
+            mesh_uri, mesh_size = _texturize(client, payload, glb, input_name, params, shape_cap + 1, tex_end)
             mesh_meta = {"source": "hunyuan3d-2", "pipeline": "text-to-3d", "textured": True}
         else:
             mesh_uri, mesh_size = _save_mesh(payload["projectId"], glb)
             mesh_meta = {"source": "hunyuan3d-2", "pipeline": "text-to-3d"}
+        outputs = [
+            {"kind": "IMAGE", "format": "png", "storageUri": img_uri, "sizeBytes": img_size,
+             "meta": {"width": params.get("width", 1024), "height": params.get("height", 1024),
+                      "stage": "txt2img"}},
+            {"kind": "MESH_RAW", "format": "glb", "storageUri": mesh_uri, "sizeBytes": mesh_size,
+             "meta": mesh_meta},
+        ]
+        if pkg:
+            outputs += _finish_package(payload, mesh_uri, params)
         _publish_progress(payload, 100, status="SUCCEEDED")
-        return {
-            "jobId": payload["jobId"],
-            "status": "SUCCEEDED",
-            "outputs": [
-                {"kind": "IMAGE", "format": "png", "storageUri": img_uri, "sizeBytes": img_size,
-                 "meta": {"width": params.get("width", 1024), "height": params.get("height", 1024),
-                          "stage": "txt2img"}},
-                {"kind": "MESH_RAW", "format": "glb", "storageUri": mesh_uri, "sizeBytes": mesh_size,
-                 "meta": mesh_meta},
-            ],
-        }
+        return {"jobId": payload["jobId"], "status": "SUCCEEDED", "outputs": outputs}
 
     # ---- Geração 3D (Hunyuan3D shape) ----
     if stage == "HUNYUAN3D_SHAPE":
@@ -284,25 +406,21 @@ def run_job(payload: dict) -> dict:
         )
         glb = max(created, key=lambda p: p.stat().st_mtime) if created else _newest_glb()
 
+        pkg = bool(params.get("package"))
+        tex_end = 84 if pkg else 100
         if want_tex:
             # Reaproveita a imagem de entrada como referência da textura.
-            uri, size = _texturize(client, payload, glb, input_name, params, shape_cap + 2, 100)
+            uri, size = _texturize(client, payload, glb, input_name, params, shape_cap + 2, tex_end)
             mesh_meta = {"source": "hunyuan3d-2", "textured": True}
         else:
             uri, size = _save_mesh(payload["projectId"], glb)
             mesh_meta = {"source": "hunyuan3d-2"}
+        outputs = [{"kind": "MESH_RAW", "format": "glb", "storageUri": uri, "sizeBytes": size,
+                    "meta": mesh_meta}]
+        if pkg:
+            outputs += _finish_package(payload, uri, params)
         _publish_progress(payload, 100, status="SUCCEEDED")
-        return {
-            "jobId": payload["jobId"],
-            "status": "SUCCEEDED",
-            "outputs": [{
-                "kind": "MESH_RAW",
-                "format": "glb",
-                "storageUri": uri,
-                "sizeBytes": size,
-                "meta": mesh_meta,
-            }],
-        }
+        return {"jobId": payload["jobId"], "status": "SUCCEEDED", "outputs": outputs}
 
     # ---- Geração 3D multi-imagem (Hunyuan3D multiview) ----
     if stage == "HUNYUAN3D_MULTIVIEW":
@@ -324,7 +442,9 @@ def run_job(payload: dict) -> dict:
             if view == "front" or front_name is None:
                 front_name = name
         want_tex = bool(params.get("texture"))
+        pkg = bool(params.get("package"))
         shape_cap = 50 if want_tex else 95
+        tex_end = 84 if pkg else 100
         graph = build_multiview_to_3d(view_images, params)
         before = set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb"))
         prompt_id = client.submit(graph)
@@ -336,23 +456,17 @@ def run_job(payload: dict) -> dict:
         glb = max(created, key=lambda p: p.stat().st_mtime) if created else _newest_glb()
 
         if want_tex and front_name:
-            uri, size = _texturize(client, payload, glb, front_name, params, shape_cap + 2, 100)
+            uri, size = _texturize(client, payload, glb, front_name, params, shape_cap + 2, tex_end)
             mesh_meta = {"source": "hunyuan3d-2-multiview", "views": list(view_images), "textured": True}
         else:
             uri, size = _save_mesh(payload["projectId"], glb)
             mesh_meta = {"source": "hunyuan3d-2-multiview", "views": list(view_images)}
+        outputs = [{"kind": "MESH_RAW", "format": "glb", "storageUri": uri, "sizeBytes": size,
+                    "meta": mesh_meta}]
+        if pkg:
+            outputs += _finish_package(payload, uri, params)
         _publish_progress(payload, 100, status="SUCCEEDED")
-        return {
-            "jobId": payload["jobId"],
-            "status": "SUCCEEDED",
-            "outputs": [{
-                "kind": "MESH_RAW",
-                "format": "glb",
-                "storageUri": uri,
-                "sizeBytes": size,
-                "meta": mesh_meta,
-            }],
-        }
+        return {"jobId": payload["jobId"], "status": "SUCCEEDED", "outputs": outputs}
 
     # ---- Geração 2D (SDXL) ----
     if stage == "SDXL_IMG2IMG":

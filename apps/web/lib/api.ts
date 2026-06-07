@@ -19,6 +19,7 @@ export interface Asset {
   format: string;
   storageUri: string;
   createdAt: string;
+  meta?: Record<string, unknown> | null;
 }
 
 export interface Job {

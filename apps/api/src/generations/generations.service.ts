@@ -23,6 +23,9 @@ const STAGE_FOR_TYPE: Partial<Record<GenerationType, JobStage>> = {
   [GenerationType.MULTI_IMAGE_TO_3D]: JobStage.HUNYUAN3D_MULTIVIEW,
   // Pipeline encadeado num job só: txt2img -> shape (não exige imagem de entrada).
   [GenerationType.TEXT_TO_3D]: JobStage.TEXT_TO_3D,
+  // Pipeline 1-clique completo: entra como Texto→3D; o worker finaliza o pacote
+  // (texturizar + otimizar + exportar) no mesmo job quando params.package = true.
+  [GenerationType.FULL_PIPELINE]: JobStage.TEXT_TO_3D,
 };
 
 // Tipos que exigem uma imagem de entrada.

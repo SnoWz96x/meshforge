@@ -10,7 +10,9 @@ import {
   Box,
   Boxes,
   Images,
+  Package,
   Type,
+  Download,
   UploadCloud,
   X,
   Cpu,
@@ -31,14 +33,24 @@ const SIZES = [
   { label: "768 × 1024", w: 768, h: 1024 },
 ];
 
-type Mode = "TEXT_TO_IMAGE" | "IMAGE_TO_IMAGE" | "IMAGE_TO_3D" | "MULTI_IMAGE_TO_3D" | "TEXT_TO_3D";
+type Mode =
+  | "TEXT_TO_IMAGE"
+  | "IMAGE_TO_IMAGE"
+  | "IMAGE_TO_3D"
+  | "MULTI_IMAGE_TO_3D"
+  | "TEXT_TO_3D"
+  | "FULL_PIPELINE";
 const MODES: { id: Mode; label: string; icon: typeof Type; ready: boolean }[] = [
   { id: "TEXT_TO_IMAGE", label: "Texto → Imagem", icon: Type, ready: true },
   { id: "IMAGE_TO_IMAGE", label: "Imagem → Imagem", icon: Wand2, ready: true },
   { id: "IMAGE_TO_3D", label: "Imagem → 3D", icon: Box, ready: true },
   { id: "MULTI_IMAGE_TO_3D", label: "Multi-imagem → 3D", icon: Images, ready: true },
   { id: "TEXT_TO_3D", label: "Texto → 3D", icon: Boxes, ready: true },
+  { id: "FULL_PIPELINE", label: "Pacote completo (1-clique)", icon: Package, ready: true },
 ];
+
+// Formatos exportados no pacote completo (além do .glb principal).
+const PACKAGE_FORMATS = ["fbx", "obj", "stl", "usdz", "gltf"] as const;
 
 // Vistas do multiview (ordem canônica enviada à API).
 const VIEWS = [
@@ -51,7 +63,10 @@ type ViewId = (typeof VIEWS)[number]["id"];
 
 const isImageInputMode = (m: Mode) => m === "IMAGE_TO_IMAGE" || m === "IMAGE_TO_3D";
 const is3DMode = (m: Mode) =>
-  m === "IMAGE_TO_3D" || m === "MULTI_IMAGE_TO_3D" || m === "TEXT_TO_3D";
+  m === "IMAGE_TO_3D" ||
+  m === "MULTI_IMAGE_TO_3D" ||
+  m === "TEXT_TO_3D" ||
+  m === "FULL_PIPELINE";
 
 const isTerminal = (s?: string) => s === "SUCCEEDED" || s === "FAILED" || s === "CANCELED";
 
@@ -74,6 +89,7 @@ export default function GeneratePage() {
   const [textureBackend, setTextureBackend] = useState<"cpu" | "gpu">("cpu");
   const [showEngine, setShowEngine] = useState(false);
   const [quality, setQuality] = useState<"balanced" | "high" | "max">("high");
+  const [pkgFormats, setPkgFormats] = useState<string[]>([...PACKAGE_FORMATS]);
   const [input, setInput] = useState<Asset | null>(null);
   const [views, setViews] = useState<Record<ViewId, Asset | null>>({
     front: null,
@@ -151,6 +167,28 @@ export default function GeneratePage() {
             texture,
             quality,
             texture_backend: textureBackend,
+          },
+        });
+      }
+      if (mode === "FULL_PIPELINE") {
+        return api.createGeneration({
+          projectId,
+          type: "FULL_PIPELINE",
+          prompt,
+          negativePrompt: negative,
+          params: {
+            width: size.w,
+            height: size.h,
+            steps,
+            cfg,
+            quality,
+            texture_backend: textureBackend,
+            // Pacote completo: texturiza + otimiza + exporta no mesmo job.
+            texture: true,
+            package: true,
+            optimize: true,
+            optimize_faces: 20000,
+            export_formats: pkgFormats,
           },
         });
       }
@@ -251,6 +289,46 @@ export default function GeneratePage() {
               modelos).
             </p>
           )}
+          {mode === "FULL_PIPELINE" && (
+            <div className="-mt-2 flex flex-col gap-3">
+              <p className="text-[11px] leading-relaxed text-content-muted">
+                <b className="text-content">Tudo num clique</b>, num job só: <b>SDXL</b> gera a
+                imagem → <b>Hunyuan3D</b> a malha → <b>textura PBR</b> (Backend A/CPU) → malha{" "}
+                <b>otimizada (~20k faces)</b> → <b>exportes</b> nos formatos abaixo. Roda no
+                servidor: pode fechar a aba que o pacote continua. É o fluxo mais completo (e o mais
+                demorado).
+              </p>
+              <Field label="Formatos no pacote">
+                <div className="flex flex-wrap gap-1.5">
+                  {PACKAGE_FORMATS.map((f) => {
+                    const on = pkgFormats.includes(f);
+                    return (
+                      <button
+                        key={f}
+                        onClick={() =>
+                          setPkgFormats((cur) =>
+                            cur.includes(f) ? cur.filter((x) => x !== f) : [...cur, f],
+                          )
+                        }
+                        className={cn(
+                          "rounded-sm border px-2.5 py-1 text-[11px] font-semibold uppercase transition-colors",
+                          on
+                            ? "border-accent bg-accent-soft text-content"
+                            : "border-border bg-surface-2 text-content-muted hover:text-content",
+                        )}
+                      >
+                        {f}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+              <p className="text-[10px] leading-relaxed text-content-muted">
+                O <b>.glb texturizado</b> e a <b>versão otimizada</b> entram sempre. Os formatos
+                acima são extras (OBJ/GLTF saem em .zip com texturas).
+              </p>
+            </div>
+          )}
           {is3DMode(mode) && (
             <Field label="Qualidade 3D">
               <div className="grid grid-cols-3 gap-1.5">
@@ -277,7 +355,7 @@ export default function GeneratePage() {
               </div>
             </Field>
           )}
-          {is3DMode(mode) && (
+          {is3DMode(mode) && mode !== "FULL_PIPELINE" && (
             <label className="-mt-1 flex cursor-pointer items-start gap-2.5 rounded-sm border border-border bg-surface-2 p-3">
               <input
                 type="checkbox"
@@ -296,7 +374,7 @@ export default function GeneratePage() {
               </span>
             </label>
           )}
-          {texture && is3DMode(mode) && (
+          {(texture || mode === "FULL_PIPELINE") && is3DMode(mode) && (
             <button
               onClick={() => setShowEngine(true)}
               className="-mt-2 flex items-center justify-between rounded-sm border border-border bg-surface-2 px-3 py-2 text-left transition-colors hover:border-accent"
@@ -392,7 +470,9 @@ export default function GeneratePage() {
                     ? `Gerar 3D de ${viewCount} vista${viewCount > 1 ? "s" : ""}`
                     : mode === "TEXT_TO_3D"
                       ? "Gerar 3D do texto"
-                      : "Gerar imagem"}
+                      : mode === "FULL_PIPELINE"
+                        ? "Gerar pacote completo"
+                        : "Gerar imagem"}
           </button>
           {busy && activeId && (
             <button
@@ -812,7 +892,10 @@ function ResultPane({
         {status === "SUCCEEDED" &&
           outAsset &&
           (isMesh ? (
-            <MeshActions assetId={outAsset.id} />
+            <>
+              <MeshActions assetId={outAsset.id} />
+              <PackageDownloads assets={assets} />
+            </>
           ) : (
             <a
               href={assetUrl(outAsset.id)}
@@ -822,6 +905,45 @@ function ResultPane({
               Baixar PNG
             </a>
           ))}
+      </div>
+    </div>
+  );
+}
+
+// Lista os artefatos pré-prontos do "pacote completo" (versão otimizada + exportes)
+// como downloads diretos. Só aparece quando o job produziu esses extras.
+function PackageDownloads({ assets }: { assets: Asset[] }) {
+  const optimized = assets.filter((a) => a.kind === "MESH_RETOPO");
+  const exports = assets.filter((a) => a.kind === "EXPORT");
+  if (!optimized.length && !exports.length) return null;
+  const label = (a: Asset) =>
+    a.kind === "MESH_RETOPO"
+      ? "Otimizada (~20k) · GLB"
+      : `${(a.meta?.exported as string)?.toUpperCase() ?? a.format.toUpperCase()}${
+          a.format === "zip" ? " · zip" : ""
+        }`;
+  const all = [...optimized, ...exports];
+  return (
+    <div className="mt-4 w-full rounded-sm border border-border bg-surface-1 p-3">
+      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-content-muted">
+        <Package size={13} className="text-accent" /> Pacote completo — {all.length} arquivo
+        {all.length > 1 ? "s" : ""}
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {all.map((a) => (
+          <button
+            key={a.id}
+            onClick={() =>
+              downloadAsset(a.id, `meshforge-${a.id.slice(0, 6)}.${a.format}`).catch((e) =>
+                toast.error(`Baixar falhou: ${(e as Error).message}`),
+              )
+            }
+            className="flex items-center gap-1.5 rounded-sm border border-border bg-surface-2 px-2.5 py-1.5 text-[11px] font-medium text-content-secondary transition-colors hover:border-accent hover:text-content"
+          >
+            <Download size={12} className="text-content-muted" />
+            {label(a)}
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -4,6 +4,27 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Added — Pipeline 1-clique completo (FULL_PIPELINE, num job só)
+- **Novo tipo `FULL_PIPELINE`**: do prompt ao **pacote pronto** num job só, sem o
+  usuário navegar entre telas. Sequência server-side: **SDXL** (imagem) → **Hunyuan3D**
+  (malha) → **textura PBR** (Backend A/CPU) → **otimizar** (decimate ~20k, preservando
+  UV/textura) → **exportar** (FBX · OBJ · STL · USDZ · GLTF). "Dispara e esquece":
+  roda no servidor, pode fechar a aba.
+- **Tudo vira asset**: imagem de preview (PREVIEW), malha texturizada (MESH_RAW),
+  versão otimizada (MESH_RETOPO) e cada exporte (EXPORT; OBJ/GLTF saem em `.zip`).
+- **Finalização no worker** reusando os **mesmos scripts Blender headless validados**
+  da API (`process_mesh.py` decimate + `export_mesh.py`) — roda em **CPU** (sem
+  GPU/ZLUDA). Robusto: falha de um formato isolado loga e segue, sem derrubar o pacote.
+- API: `GenerationType.FULL_PIPELINE` entra pelo stage `TEXT_TO_3D`; o worker finaliza
+  quando `params.package = true` (params: `optimize`, `optimize_faces`, `export_formats`).
+  **Sem migração** (enum já existia; reusa o stage).
+- UI: aba **"Pacote completo (1-clique)"** na tela Gerar (seleção de formatos do pacote)
+  + bloco **"Pacote completo — N arquivos"** no resultado com download direto de cada
+  artefato pré-pronto.
+- **Validado**: finalização (decimate + 5 formatos) confirmada saindo do worker
+  (FBX/OBJ-zip/STL/USDZ/GLTF-zip + glb otimizado 954 KB de uma malha 22 MB);
+  E2E do fluxo completo pela API. Typecheck API/web, ESLint e pytest (12) limpos.
+
 ### Added — Multi-imagem → 3D (Hunyuan3D multiview, sem download extra)
 - **Novo tipo de geração `MULTI_IMAGE_TO_3D`**: o usuário envia de **1 a 4 vistas**
   (frente · esquerda · direita · trás) do mesmo objeto e o **`Hy3DGenerateMeshMultiView`**
