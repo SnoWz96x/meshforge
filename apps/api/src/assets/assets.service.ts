@@ -28,7 +28,7 @@ const PROCESS_SCRIPT =
   process.env.BLENDER_PROCESS_SCRIPT ??
   resolve(process.cwd(), "../../services/blender-service/process_mesh.py");
 
-export const PROCESS_OPS = ["cleanup", "decimate", "remesh"] as const;
+export const PROCESS_OPS = ["cleanup", "decimate", "remesh", "texfix"] as const;
 
 const MIME: Record<string, string> = {
   png: "image/png",

@@ -34,7 +34,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | Retopologia automática | ✅ | Blender headless: decimate (reduz preservando UV) + **remesh watertight** (voxel) com **re-bake da textura** (EMIT) na nova topologia. (QuadriFlow quad-puro é instável nessas malhas — voxel é o confiável.) |
 | Correção automática de malha | ✅ | Blender headless: solda vértices, remove soltos, normais, fecha buracos (`process_mesh.py`, op `cleanup`) |
 | Texturização (Hunyuan3D paint) | ✅ **premium** (Backend A) | **Textura PBR premium na AMD/ZLUDA**: delight (albedo limpo) + paint + bake + inpaint de costuras, texturas 1024². Validado E2E (cogumelo foto-realista). Backend B (GPU nativo) pendente |
-| Ajuste automático de texturas | ⬜ | Fase 4 |
+| Ajuste automático de texturas | ✅ | **Op `texfix`** (Blender headless): ajuste automático do albedo **preservando a matiz** — níveis por razão de luminância (contraste/brilho) + saturação suave; ignora padding do atlas. (White-balance gray-world foi descartado: estragava cores fortes legítimas.) Exposto na tela Exportar e auto-aplicado no pacote 1-clique (`texture_fix`). Validado E2E (cogumelo: realce sem virar ciano) |
 | Pipeline completo (prompt→modelo final) | ✅ | **1-clique `FULL_PIPELINE`** num job só: SDXL → Hunyuan3D shape → textura PBR → otimizar (decimate ~20k) → exportar (FBX/OBJ/STL/USDZ/GLTF), todos virando assets. Worker finaliza com Blender headless (CPU). UI: aba "Pacote completo (1-clique)" + downloads do pacote no resultado |
 | Exportação GLB/GLTF/OBJ/FBX/STL/USDZ | ✅ | **Blender 4.2 headless** converte preservando UV/textura (+ PLY). API `POST /assets/:id/export` + tela Exportar. Validado E2E (FBX/OBJ/STL/USDZ) |
 

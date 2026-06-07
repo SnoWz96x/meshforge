@@ -183,8 +183,9 @@ export default function GeneratePage() {
             cfg,
             quality,
             texture_backend: textureBackend,
-            // Pacote completo: texturiza + otimiza + exporta no mesmo job.
+            // Pacote completo: texturiza + ajuste auto de textura + otimiza + exporta.
             texture: true,
+            texture_fix: true,
             package: true,
             optimize: true,
             optimize_faces: 20000,
@@ -293,10 +294,10 @@ export default function GeneratePage() {
             <div className="-mt-2 flex flex-col gap-3">
               <p className="text-[11px] leading-relaxed text-content-muted">
                 <b className="text-content">Tudo num clique</b>, num job só: <b>SDXL</b> gera a
-                imagem → <b>Hunyuan3D</b> a malha → <b>textura PBR</b> (Backend A/CPU) → malha{" "}
-                <b>otimizada (~20k faces)</b> → <b>exportes</b> nos formatos abaixo. Roda no
-                servidor: pode fechar a aba que o pacote continua. É o fluxo mais completo (e o mais
-                demorado).
+                imagem → <b>Hunyuan3D</b> a malha → <b>textura PBR</b> (Backend A/CPU) →{" "}
+                <b>ajuste automático da textura</b> → malha <b>otimizada (~20k faces)</b> →{" "}
+                <b>exportes</b> nos formatos abaixo. Roda no servidor: pode fechar a aba que o pacote
+                continua. É o fluxo mais completo (e o mais demorado).
               </p>
               <Field label="Formatos no pacote">
                 <div className="flex flex-wrap gap-1.5">

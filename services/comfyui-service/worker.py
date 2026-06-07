@@ -146,6 +146,31 @@ def _blender_decimate(src_glb: Path, faces: int) -> bytes:
         shutil.rmtree(d, ignore_errors=True)
 
 
+def _blender_texfix(src_glb: Path) -> bytes:
+    """Ajuste automático da textura (white-preserve: contraste + saturação) via Blender.
+    Devolve os bytes do novo .glb."""
+    d = Path(tempfile.mkdtemp(prefix="mf-tfix-"))
+    try:
+        out = d / "out.glb"
+        _run_blender([BLENDER_PROCESS_SCRIPT, "--", str(src_glb), str(out), "texfix", "0"])
+        return out.read_bytes()
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
+def _apply_texfix(payload: dict, mesh_uri: str, mesh_size: int, params: dict) -> tuple[str, int]:
+    """Se params.texture_fix, ajusta automaticamente a textura da malha e devolve o novo
+    (uri, size); senão devolve o original. Robusto: falha não derruba a geração."""
+    if not params.get("texture_fix"):
+        return mesh_uri, mesh_size
+    try:
+        data = _blender_texfix(_local_from_uri(mesh_uri))
+        return _save_bytes(payload["projectId"], data, "glb")
+    except Exception as e:  # noqa: BLE001
+        log(logging.WARNING, payload.get("jobId"), payload.get("stage"), f"texfix falhou: {e!r}")
+        return mesh_uri, mesh_size
+
+
 def _blender_export(src_glb: Path, fmt: str) -> tuple[bytes, str]:
     """Exporta a malha (.glb) para `fmt` via Blender. Multi-arquivo (obj/gltf) → .zip.
     Devolve (bytes, formato_salvo)."""
@@ -365,9 +390,10 @@ def run_job(payload: dict) -> dict:
         glb = max(created, key=lambda p: p.stat().st_mtime) if created else _newest_glb()
 
         pkg = bool(params.get("package"))
-        tex_end = 84 if pkg else 100
+        tex_end = 84 if (pkg or params.get("texture_fix")) else 100
         if want_tex:
             mesh_uri, mesh_size = _texturize(client, payload, glb, input_name, params, shape_cap + 1, tex_end)
+            mesh_uri, mesh_size = _apply_texfix(payload, mesh_uri, mesh_size, params)
             mesh_meta = {"source": "hunyuan3d-2", "pipeline": "text-to-3d", "textured": True}
         else:
             mesh_uri, mesh_size = _save_mesh(payload["projectId"], glb)
@@ -407,10 +433,11 @@ def run_job(payload: dict) -> dict:
         glb = max(created, key=lambda p: p.stat().st_mtime) if created else _newest_glb()
 
         pkg = bool(params.get("package"))
-        tex_end = 84 if pkg else 100
+        tex_end = 84 if (pkg or params.get("texture_fix")) else 100
         if want_tex:
             # Reaproveita a imagem de entrada como referência da textura.
             uri, size = _texturize(client, payload, glb, input_name, params, shape_cap + 2, tex_end)
+            uri, size = _apply_texfix(payload, uri, size, params)
             mesh_meta = {"source": "hunyuan3d-2", "textured": True}
         else:
             uri, size = _save_mesh(payload["projectId"], glb)
@@ -444,7 +471,7 @@ def run_job(payload: dict) -> dict:
         want_tex = bool(params.get("texture"))
         pkg = bool(params.get("package"))
         shape_cap = 50 if want_tex else 95
-        tex_end = 84 if pkg else 100
+        tex_end = 84 if (pkg or params.get("texture_fix")) else 100
         graph = build_multiview_to_3d(view_images, params)
         before = set((COMFYUI_OUTPUT_DIR / "3D").glob("*.glb"))
         prompt_id = client.submit(graph)
@@ -457,6 +484,7 @@ def run_job(payload: dict) -> dict:
 
         if want_tex and front_name:
             uri, size = _texturize(client, payload, glb, front_name, params, shape_cap + 2, tex_end)
+            uri, size = _apply_texfix(payload, uri, size, params)
             mesh_meta = {"source": "hunyuan3d-2-multiview", "views": list(view_images), "textured": True}
         else:
             uri, size = _save_mesh(payload["projectId"], glb)

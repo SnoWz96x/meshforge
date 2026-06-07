@@ -4,6 +4,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Added — Ajuste automático de texturas (op `texfix`, Blender headless)
+- **Nova op `texfix`**: corrige o albedo bakeado **automaticamente, preservando a matiz**.
+  - **Níveis por razão de luminância**: estica o contraste/brilho entre percentis
+    robustos (2–98%) e reescala o RGB pelo mesmo fator → muda só luminosidade, **nunca
+    a cor**. Ignora o padding escuro do atlas nas estatísticas.
+  - **Saturação** suave em torno da luminância.
+  - *(Nota honesta: a 1ª tentativa usava white-balance gray-world e **estragava** cores
+    fortes legítimas — um cogumelo vermelho virava ciano. Descartado em favor do ajuste
+    hue-preserving.)*
+- Exposto na **tela Exportar** ("Ajustar textura (auto) — contraste + cor") e
+  **auto-aplicado no pacote 1-clique** (`FULL_PIPELINE` agora liga `texture_fix`).
+- API: op `texfix` em `POST /assets/:id/process`. Worker: `_apply_texfix` aplica logo
+  após a textura nos 3 fluxos 3D quando `params.texture_fix` (reusa o mesmo script).
+- **Validado E2E**: render antes/depois (realce de contraste/saturação sem desvio de
+  cor) + via API (novo asset). Typecheck API/web, ESLint, pytest (12) limpos.
+
 ### Added — Pipeline 1-clique completo (FULL_PIPELINE, num job só)
 - **Novo tipo `FULL_PIPELINE`**: do prompt ao **pacote pronto** num job só, sem o
   usuário navegar entre telas. Sequência server-side: **SDXL** (imagem) → **Hunyuan3D**

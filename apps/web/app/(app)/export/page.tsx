@@ -71,7 +71,7 @@ export default function ExportPage() {
   });
 
   const processor = useMutation({
-    mutationFn: (op: "cleanup" | "decimate" | "remesh") =>
+    mutationFn: (op: "cleanup" | "decimate" | "remesh" | "texfix") =>
       api.processAsset(selected as string, op, targetFaces),
     onSuccess: async (asset, op) => {
       await qc.invalidateQueries({ queryKey: ["meshes"] });
@@ -81,7 +81,9 @@ export default function ExportPage() {
           ? "Malha limpa criada."
           : op === "remesh"
             ? "Malha com topologia limpa (remesh) criada."
-            : "Malha otimizada criada.";
+            : op === "texfix"
+              ? "Textura ajustada automaticamente."
+              : "Malha otimizada criada.";
       toast.success(msg);
     },
     onError: (e) => toast.error(`Processamento falhou: ${(e as Error).message}`),
@@ -197,6 +199,21 @@ export default function ExportPage() {
               >
                 Remesh — topologia limpa (com textura)
                 {processor.isPending && processor.variables === "remesh" && (
+                  <Loader2 size={14} className="animate-spin text-accent" />
+                )}
+              </button>
+              <button
+                disabled={!selectedMesh || processor.isPending}
+                onClick={() => processor.mutate("texfix")}
+                className={cn(
+                  "flex items-center justify-between rounded-sm border border-border bg-surface-2 px-3 py-2 text-left text-[12px] font-medium text-content transition-colors",
+                  !selectedMesh || processor.isPending
+                    ? "cursor-not-allowed opacity-50"
+                    : "hover:border-accent hover:bg-accent-soft",
+                )}
+              >
+                Ajustar textura (auto) — contraste + cor
+                {processor.isPending && processor.variables === "texfix" && (
                   <Loader2 size={14} className="animate-spin text-accent" />
                 )}
               </button>

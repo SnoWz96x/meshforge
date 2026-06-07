@@ -10,6 +10,7 @@ op:
   cleanup  -> merge by distance + apaga geometria solta + recalcula normais + fecha buracos
   decimate -> cleanup + reduz a contagem de faces para ~target_faces (collapse, preserva UV)
   remesh   -> topologia limpa watertight (voxel remesh) + UV novo + bake da textura (EMIT)
+  texfix   -> ajuste automático da textura (white-balance + níveis + saturação), sem mexer na malha
 """
 import sys
 
@@ -113,6 +114,88 @@ if op == "remesh":
     n = remesh_rebake(target_faces)
     bpy.ops.export_scene.gltf(filepath=dst, export_format="GLB", use_selection=True)
     print(f"PROCESS_OK {dst} remesh faces={n}", flush=True)
+    raise SystemExit(0)
+
+
+def _texture_images():
+    """Imagens ligadas ao Base Color dos materiais (a textura albedo da malha)."""
+    imgs = []
+    seen = set()
+    for o in meshes:
+        for slot in o.material_slots:
+            m = slot.material
+            if not m or not m.use_nodes:
+                continue
+            bsdf = next((n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
+            if not bsdf:
+                continue
+            bc = bsdf.inputs["Base Color"]
+            if bc.is_linked:
+                node = bc.links[0].from_node
+                if node.type == "TEX_IMAGE" and node.image and node.image.name not in seen:
+                    seen.add(node.image.name)
+                    imgs.append(node.image)
+    return imgs
+
+
+def _auto_adjust_image(img, levels=0.6, sat=1.12):
+    """Ajuste automático no albedo, **preservando a matiz** (sem white-balance, que
+    estraga objetos de cor forte legítima — ex.: um cogumelo vermelho viraria ciano).
+
+    - Níveis: estica a LUMINÂNCIA entre percentis robustos e reescala o RGB pelo
+      mesmo fator (razão de luminância) → muda só brilho/contraste, nunca a cor.
+    - Saturação: realce suave em torno da luminância.
+    Conservador (mistura parcial). Ignora o padding escuro do atlas nas estatísticas.
+    Devolve (rgb_antes, rgb_depois) para log."""
+    import numpy as np
+
+    n = len(img.pixels)
+    if n == 0:
+        return None, None
+    buf = np.empty(n, dtype=np.float32)
+    img.pixels.foreach_get(buf)
+    a = buf.reshape(-1, 4)
+    rgb = a[:, :3].astype(np.float32)
+    coef = np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
+    lum = rgb @ coef
+    mask = lum > 0.02  # exclui padding preto do atlas nas estatísticas
+    if mask.sum() < 16:
+        mask = np.ones(len(rgb), dtype=bool)
+    before = rgb[mask].mean(axis=0) * 255.0
+
+    # 1) níveis por razão de luminância (preserva matiz/croma)
+    lo, hi = np.percentile(lum[mask], 2.0), np.percentile(lum[mask], 98.0)
+    if hi - lo > 1e-3:
+        lum_s = np.clip((lum - lo) / (hi - lo), 0.0, 1.0)
+        lum_t = lum * (1.0 - levels) + lum_s * levels
+        ratio = (lum_t / (lum + 1e-6))[:, None]
+        rgb = np.clip(rgb * ratio, 0.0, 1.0)
+
+    # 2) saturação suave (em torno da nova luminância)
+    l2 = (rgb @ coef)[:, None]
+    rgb = np.clip(l2 + (rgb - l2) * sat, 0.0, 1.0)
+
+    after = rgb[mask].mean(axis=0) * 255.0
+    a[:, :3] = rgb
+    img.pixels.foreach_set(a.reshape(-1))
+    img.update()
+    try:
+        img.pack()
+    except Exception:  # noqa: BLE001
+        pass
+    return before, after
+
+
+if op == "texfix":
+    imgs = _texture_images()
+    if not imgs:
+        print("PROCESS_WARN texfix: malha sem textura albedo — re-exportando sem mudanças", flush=True)
+    for img in imgs:
+        b, a = _auto_adjust_image(img)
+        if b is not None:
+            print(f"texfix {img.name}: RGB {b.round(1)} -> {a.round(1)} ({img.size[0]}x{img.size[1]})", flush=True)
+    bpy.ops.export_scene.gltf(filepath=dst, export_format="GLB")
+    print(f"PROCESS_OK {dst} texfix images={len(imgs)}", flush=True)
     raise SystemExit(0)
 
 
