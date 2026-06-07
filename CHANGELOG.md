@@ -4,6 +4,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/). Datas em ISO
 
 ## [Unreleased]
 
+### Added — Comando `update` no tool-manager (atualização segura sob confirmação)
+- **`meshforge-tools update [tool]`** completa o trio `check`/`verify`/`update`.
+- **Seguro por padrão**: roda em **simulação** (lista o que mudaria); só aplica com
+  `--yes`. `update <tool>` limita a uma ferramenta.
+- **Git tools** (ComfyUI, Hunyuan3D): atualiza para a ponta do `trackRef` com
+  `fetch` + `checkout`, **rollback** automático ao commit anterior se o checkout falhar,
+  e **não sobrescreve árvore de trabalho suja** (protege patches locais como o do ZLUDA)
+  a menos que `--force`. O **lockfile só muda em caso de sucesso**.
+- **Release** (Blender): honestamente **não** auto-atualiza binários — fica fixado por
+  versão no manifesto (mover de versão = editar URL/version/sha256 + `install`).
+- **Validado E2E**: simulação (reportou ComfyUI desatualizado), skip de árvore suja
+  (pulou sem perder alteração local), apply real (ComfyUI `4f99ce0f` → `2cdaaf4a`,
+  lockfile atualizado) e **restauro** ao estado original. typecheck + ESLint limpos.
+
 ### Added — Ajuste automático de texturas (op `texfix`, Blender headless)
 - **Nova op `texfix`**: corrige o albedo bakeado **automaticamente, preservando a matiz**.
   - **Níveis por razão de luminância**: estica o contraste/brilho entre percentis

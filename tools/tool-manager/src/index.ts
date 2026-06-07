@@ -157,6 +157,121 @@ async function cmdVerify(): Promise<void> {
   if (!ok) process.exitCode = 1;
 }
 
+/** Working tree com alterações locais? (protege patches como o do ZLUDA.) */
+async function gitDirty(target: string): Promise<boolean> {
+  const out = await git(["status", "--porcelain"], target).catch(() => "");
+  return out.trim().length > 0;
+}
+
+/**
+ * Atualiza ferramentas para a ponta do `trackRef` (git), com segurança:
+ *  - simulação por padrão; só aplica com `--yes`/`-y`;
+ *  - `update <tool>` limita a uma ferramenta;
+ *  - não sobrescreve árvore suja (evita perder patches locais) — a não ser com `--force`;
+ *  - rollback ao commit anterior se o checkout falhar;
+ *  - lockfile só muda em caso de sucesso;
+ *  - `release` (binários) não é auto-atualizado (fixado por versão no manifesto).
+ */
+async function cmdUpdate(): Promise<void> {
+  const args = process.argv.slice(3);
+  const apply = args.includes("--yes") || args.includes("-y");
+  const force = args.includes("--force");
+  const only = args.find((a) => !a.startsWith("-"));
+  const entries = Object.entries(DEFAULT_MANIFEST).filter(([name]) => !only || name === only);
+  if (only && entries.length === 0) {
+    console.error(`Ferramenta desconhecida: ${only}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(
+    apply
+      ? "⬆ Atualizando ferramentas...\n"
+      : "⬆ Atualização — simulação (use --yes para aplicar)...\n",
+  );
+
+  const lock = await readLock();
+  let pending = 0;
+  let changed = false;
+
+  for (const [name, entry] of entries) {
+    const current = lock.tools[name];
+    try {
+      if (entry.type !== "git") {
+        const latest = entry.githubRepo ? await latestGithubRelease(entry.githubRepo) : null;
+        const note =
+          latest && latest !== `v${entry.version}` && latest !== entry.version
+            ? ` (upstream ${latest})`
+            : "";
+        console.log(`▸ ${name}: release fixado em v${entry.version} no manifesto${note}`);
+        console.log(
+          "  ℹ binários 'release' não são auto-atualizados (segurança). Para mover de versão:" +
+            " edite a URL/version/sha256 no manifesto e rode 'install'.",
+        );
+        continue;
+      }
+
+      const latest = await latestGithubCommit(entry.repo, entry.trackRef);
+      if (current?.commitHash === latest) {
+        console.log(`▸ ${name}: ✓ já atual (${latest.slice(0, 10)})`);
+        continue;
+      }
+      pending++;
+      console.log(
+        `▸ ${name}: ${current?.commitHash?.slice(0, 10) ?? "—"} → ${latest.slice(0, 10)} (${entry.trackRef})`,
+      );
+      if (!apply) continue;
+
+      const target = join(AUX, name);
+      if (!existsSync(join(target, ".git"))) {
+        console.error("  ✗ não instalado; rode 'install' primeiro");
+        continue;
+      }
+      if (!force && (await gitDirty(target))) {
+        console.error(
+          "  ⚠ árvore de trabalho com alterações locais (ex.: patch ZLUDA) — pulado p/ não perder. Use --force para sobrescrever.",
+        );
+        continue;
+      }
+      const prev =
+        current?.commitHash ?? (await git(["rev-parse", "HEAD"], target).catch(() => ""));
+      await git(["fetch", "--all", "--tags"], target);
+      try {
+        await git(["checkout", latest], target);
+        const head = await git(["rev-parse", "HEAD"], target);
+        lock.tools[name] = {
+          tool: name,
+          type: "git",
+          version: head,
+          commitHash: head,
+          installedAt: new Date().toISOString(),
+          path: target,
+        };
+        await writeLock(lock);
+        changed = true;
+        console.log(`  ✓ atualizado para ${head.slice(0, 10)}`);
+      } catch (err) {
+        console.error(`  ✗ checkout falhou: ${(err as Error).message}`);
+        if (prev) {
+          await git(["checkout", prev], target).catch(() => undefined);
+          console.error(`  ↩ rollback para ${prev.slice(0, 10)}`);
+        }
+      }
+    } catch (err) {
+      console.error(`▸ ${name}: erro (${(err as Error).message})`);
+    }
+  }
+
+  if (!apply && pending > 0) {
+    console.log(
+      `\n${pending} atualização(ões) pendente(s). Rode 'update${only ? ` ${only}` : ""} --yes' para aplicar.`,
+    );
+  } else if (apply) {
+    console.log(changed ? "\n✅ Lockfile atualizado." : "\nNada aplicado.");
+  } else {
+    console.log("\n✓ Tudo atual.");
+  }
+}
+
 async function main(): Promise<void> {
   const cmd = process.argv[2];
   switch (cmd) {
@@ -166,12 +281,16 @@ async function main(): Promise<void> {
       return cmdCheck();
     case "verify":
       return cmdVerify();
+    case "update":
+      return cmdUpdate();
     default:
       console.log(
         "Uso: meshforge-tools <comando>\n\n" +
-          "  install   Clona/baixa e fixa as ferramentas (atualiza lockfile)\n" +
-          "  check     Reporta versões mais novas disponíveis (não aplica)\n" +
-          "  verify    Revalida integridade do que está instalado\n",
+          "  install          Clona/baixa e fixa as ferramentas (atualiza lockfile)\n" +
+          "  check            Reporta versões mais novas disponíveis (não aplica)\n" +
+          "  verify           Revalida integridade do que está instalado\n" +
+          "  update [tool]     Atualiza git tools p/ a ponta do trackRef (simulação;\n" +
+          "                    --yes aplica, --force ignora árvore suja). Rollback se falhar.\n",
       );
       process.exitCode = cmd ? 1 : 0;
   }

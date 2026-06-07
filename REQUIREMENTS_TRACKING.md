@@ -64,7 +64,7 @@ funcional algo que não esteja realmente implementado e validado.**
 | :-- | :-- | :-- |
 | auxiliary-tools (download automático) | ✅ | tool-manager: clone/pin/verify (ComfyUI, Hunyuan3D, Blender) |
 | Model manager | ✅ | download/verify via HuggingFace (SDXL, Hunyuan3D) |
-| Version/Update manager | 🚧 | `check`/`verify` ok; `update` sob confirmação NÃO implementado |
+| Version/Update manager | ✅ | `check`/`verify`/**`update`**. `update` é seguro: simulação por padrão (`--yes` aplica), atualiza git tools p/ a ponta do trackRef com **rollback** se o checkout falhar, **não sobrescreve árvore suja** (protege patches locais, ex.: ZLUDA) salvo `--force`, e só grava o lockfile em sucesso. Release (Blender) fica fixado por versão no manifesto (sem auto-update de binário). Validado E2E (skip de árvore suja + apply real + restauro) |
 | Bootstrap 1 comando (install.ps1/.sh) | 🚧 | Existe; não validado como fluxo único E2E em máquina limpa |
 | Docker / Docker Compose | ✅ | Postgres/Redis/MinIO |
 | Kubernetes | ⬜ | Futuro |
